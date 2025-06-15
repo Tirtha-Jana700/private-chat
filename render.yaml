@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: private-chat-app
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn server:app --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PORT
+        value: 10000
+
+

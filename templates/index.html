@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Private Chat Room</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0; font-family:Arial,sans-serif; background-color:#f4f4f4; color:#333;">
+    <div id="container" style="padding:20px; max-width:600px; margin:auto;">
+        <h2 style="text-align:center;">🌐 Private Chat Room</h2>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <input id="username" placeholder="Username" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <input id="room" placeholder="Room" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <button onclick="joinRoom()" style="padding:10px 15px; border:none; background-color:#007bff; color:white; border-radius:8px;">Join</button>
+        </div>
+
+        <div id="chat" style="height:300px; overflow-y:auto; background:white; padding:10px; border-radius:10px; border:1px solid #ccc; margin-bottom:10px;"></div>
+
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <input id="message" placeholder="Type a message..." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <button onclick="sendMessage()" style="padding:10px 15px; border:none; background-color:#28a745; color:white; border-radius:8px;">Send</button>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <input type="file" id="fileInput" style="flex:1;">
+            <button onclick="uploadFile()" style="padding:10px 15px; border:none; background-color:#6f42c1; color:white; border-radius:8px;">Upload File</button>
+        </div>
+
+        <button onclick="toggleDarkMode()" style="padding:10px 15px; border:none; background-color:#343a40; color:white; border-radius:8px;">Toggle Night Mode</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentRoom = "";
+        let username = "";
+
+        function joinRoom() {
+            username = document.getElementById("username").value;
+            currentRoom = document.getElementById("room").value;
+            if (username && currentRoom) {
+                socket.emit("join", { username, room: currentRoom });
+            }
+        }
+
+        function sendMessage() {
+            const message = document.getElementById("message").value;
+            if (message && currentRoom && username) {
+                socket.emit("private_message", { username, message, room: currentRoom });
+                document.getElementById("message").value = "";
+            }
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+            if (!file) return alert("No file selected");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                socket.emit("private_message", {
+                    username,
+                    message: `<a href="${base64}" download="${file.name}">📁 ${file.name}</a>`,
+                    room: currentRoom
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        socket.on("private_message", data => {
+            const chat = document.getElementById("chat");
+            const div = document.createElement("div");
+            div.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+            div.style.marginBottom = "5px";
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        });
+
+        function toggleDarkMode() {
+            const body = document.body;
+            const currentBg = body.style.backgroundColor;
+            const dark = currentBg !== "rgb(34, 34, 34)";
+            body.style.backgroundColor = dark ? "#222" : "#f4f4f4";
+            body.style.color = dark ? "#f4f4f4" : "#333";
+            document.getElementById("chat").style.backgroundColor = dark ? "#333" : "#fff";
+            document.getElementById("chat").style.color = dark ? "#fff" : "#000";
+        }
+    </script>
+</body>
+</html>
+
+
