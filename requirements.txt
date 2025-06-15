@@ -1,4 +1,6 @@
-flask
-flask_socketio
-gunicorn
+Flask
+flask-socketio
 eventlet
+Flask-Cors
+
+

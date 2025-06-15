@@ -1,11 +1,9 @@
 services:
   - type: web
-    name: private-chat-app
+    name: private-chat
     env: python
-    buildCommand: ""
-    startCommand: gunicorn server:app --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT
-    envVars:
-      - key: PORT
-        value: 10000
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    plan: free
 
 
