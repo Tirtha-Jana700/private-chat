@@ -1,92 +1,192 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Chat Room</title>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f9fafb;
+            --text-color: #1f2937;
+            --button-bg: #6366f1;
+            --button-text: #ffffff;
+            --accent: #a78bfa;
+            --hover-glow: 0 0 12px rgba(167, 139, 250, 0.6);
+        }
+
+        body.dark-mode {
+            --bg-color: #111827;
+            --text-color: #f3f4f6;
+            --button-bg: #8b5cf6;
+            --button-text: #ffffff;
+            --accent: #d8b4fe;
+            --hover-glow: 0 0 12px rgba(216, 180, 254, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            border-radius: 1rem;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        h2 {
+            text-align: center;
+            margin: 0;
+            font-size: 2rem;
+            color: var(--accent);
+            transition: color 0.3s;
+        }
+
+        input[type=text], input[type=file], textarea {
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 0.75rem;
+            width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: border 0.3s;
+        }
+
+        input[type=text]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            height: 180px;
+            resize: none;
+            overflow-y: auto;
+        }
+
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        button:hover {
+            box-shadow: var(--hover-glow);
+        }
+
+        .toggle-mode {
+            align-self: flex-end;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
-<body style="margin:0; font-family:Arial,sans-serif; background-color:#f4f4f4; color:#333;">
-    <div id="container" style="padding:20px; max-width:600px; margin:auto;">
-        <h2 style="text-align:center;">🌐 Private Chat Room</h2>
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <input id="username" placeholder="Username" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:8px;">
-            <input id="room" placeholder="Room" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:8px;">
-            <button onclick="joinRoom()" style="padding:10px 15px; border:none; background-color:#007bff; color:white; border-radius:8px;">Join</button>
-        </div>
+<body>
+<div class="container">
+    <button class="toggle-mode" id="toggleBtn" onclick="toggleMode()">Dark Mode</button>
+    <h2>💬 Private Chat Room</h2>
+    <input id="username" type="text" placeholder="Enter username">
+    <input id="room" type="text" placeholder="Enter room name">
+    <button onclick="joinRoom()">Join Room</button>
+    <textarea id="chat" readonly></textarea>
+    <input id="message" type="text" placeholder="Type a message">
+    <button onclick="sendMessage()">Send Message</button>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input id="file" type="file" name="file">
+        <button type="submit">Upload File</button>
+    </form>
+</div>
 
-        <div id="chat" style="height:300px; overflow-y:auto; background:white; padding:10px; border-radius:10px; border:1px solid #ccc; margin-bottom:10px;"></div>
+<script>
+    const socket = io();
+    let room = "";
+    let username = "";
 
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <input id="message" placeholder="Type a message..." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:8px;">
-            <button onclick="sendMessage()" style="padding:10px 15px; border:none; background-color:#28a745; color:white; border-radius:8px;">Send</button>
-        </div>
+    function joinRoom() {
+        username = document.getElementById("username").value.trim();
+        room = document.getElementById("room").value.trim();
+        if (!username || !room) return alert("Enter username and room name");
+        socket.emit("join", { username, room });
+    }
 
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <input type="file" id="fileInput" style="flex:1;">
-            <button onclick="uploadFile()" style="padding:10px 15px; border:none; background-color:#6f42c1; color:white; border-radius:8px;">Upload File</button>
-        </div>
-
-        <button onclick="toggleDarkMode()" style="padding:10px 15px; border:none; background-color:#343a40; color:white; border-radius:8px;">Toggle Night Mode</button>
-    </div>
-
-    <script>
-        const socket = io();
-        let currentRoom = "";
-        let username = "";
-
-        function joinRoom() {
-            username = document.getElementById("username").value;
-            currentRoom = document.getElementById("room").value;
-            if (username && currentRoom) {
-                socket.emit("join", { username, room: currentRoom });
-            }
+    function sendMessage() {
+        const msg = document.getElementById("message").value.trim();
+        if (msg) {
+            socket.emit("private_message", { username, room, message: msg });
+            document.getElementById("message").value = "";
         }
+    }
 
-        function sendMessage() {
-            const message = document.getElementById("message").value;
-            if (message && currentRoom && username) {
-                socket.emit("private_message", { username, message, room: currentRoom });
-                document.getElementById("message").value = "";
-            }
-        }
+    socket.on("private_message", data => {
+        const chat = document.getElementById("chat");
+        chat.value += `${data.username}: ${data.message}\n`;
+        chat.scrollTop = chat.scrollHeight;
+    });
 
-        function uploadFile() {
-            const fileInput = document.getElementById("fileInput");
-            const file = fileInput.files[0];
-            if (!file) return alert("No file selected");
+    document.getElementById("uploadForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById("file");
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64 = e.target.result;
-                socket.emit("private_message", {
-                    username,
-                    message: `<a href="${base64}" download="${file.name}">📁 ${file.name}</a>`,
-                    room: currentRoom
-                });
-            };
-            reader.readAsDataURL(file);
-        }
+        fetch("/upload", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            socket.emit("private_message", {
+                username,
+                room,
+                message: `Shared a file: ${location.origin}${data.url}`
+            });
+        })
+        .catch(() => alert("Upload failed."));
+    });
 
-        socket.on("private_message", data => {
-            const chat = document.getElementById("chat");
-            const div = document.createElement("div");
-            div.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
-            div.style.marginBottom = "5px";
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-        });
-
-        function toggleDarkMode() {
-            const body = document.body;
-            const currentBg = body.style.backgroundColor;
-            const dark = currentBg !== "rgb(34, 34, 34)";
-            body.style.backgroundColor = dark ? "#222" : "#f4f4f4";
-            body.style.color = dark ? "#f4f4f4" : "#333";
-            document.getElementById("chat").style.backgroundColor = dark ? "#333" : "#fff";
-            document.getElementById("chat").style.color = dark ? "#fff" : "#000";
-        }
-    </script>
+    function toggleMode() {
+    const body = document.body;
+    const toggleBtn = document.getElementById("toggleBtn");
+    body.classList.toggle("dark-mode");
+    toggleBtn.textContent = body.classList.contains("dark-mode") ? "🌞Day Mode" : "🌙Dark Mode";
+}
+</script>
 </body>
 </html>
+    
+
 
 
