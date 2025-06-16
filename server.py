@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, join_room, emit
 from flask_cors import CORS
@@ -41,5 +44,6 @@ if __name__ == "__main__":
     import eventlet
     eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)
+
 
 
