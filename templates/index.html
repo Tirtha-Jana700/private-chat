@@ -118,7 +118,7 @@
     <input id="username" type="text" placeholder="Enter username">
     <input id="room" type="text" placeholder="Enter room name">
     <button onclick="joinRoom()">Join Room</button>
-    <textarea id="chat" readonly></textarea>
+<div id="chat" style="height: 180px; overflow-y: auto; border: 1px solid #ccc; border-radius: 0.75rem; padding: 0.75rem; background-color: var(--bg-color); color: var(--text-color); white-space: pre-wrap;"></div>
     <input id="message" type="text" placeholder="Type a message">
     <button onclick="sendMessage()">Send Message</button>
     <form id="uploadForm" enctype="multipart/form-data">
@@ -146,10 +146,12 @@
     }
 
     socket.on("private_message", data => {
-        const chat = document.getElementById("chat");
-        chat.value += `${data.username}: ${data.message}\n`;
-        chat.scrollTop = chat.scrollHeight;
-    });
+    const chat = document.getElementById("chat");
+    const messageElement = document.createElement("div");
+    messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+    chat.appendChild(messageElement);
+    chat.scrollTop = chat.scrollHeight;
+});
 
     document.getElementById("uploadForm").addEventListener("submit", function(e) {
         e.preventDefault();
@@ -165,10 +167,10 @@
         .then(res => res.json())
         .then(data => {
             socket.emit("private_message", {
-                username,
-                room,
-                message: `Shared a file: ${location.origin}${data.url}`
-            });
+    username,
+    room,
+    message: `Shared a file: <a href="${location.origin}${data.url}" target="_blank" style="color: var(--accent); text-decoration: underline;">Download File</a>`
+});
         })
         .catch(() => alert("Upload failed."));
     });
@@ -181,7 +183,6 @@
     }
 </script></body>
 </html>
-
 
 
 

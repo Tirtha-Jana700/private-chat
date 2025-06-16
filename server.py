@@ -33,12 +33,11 @@ def handle_join(data):
         "message": f"{data['username']} has joined the room."
     }, room=data["room"])
 
+# server.py
 @socketio.on("private_message")
-def handle_message(data):
-    emit("private_message", {
-        "username": data["username"],
-        "message": data["message"]
-    }, room=data["room"])
+def handle_private_message(data):
+    room = data["room"]
+    emit("private_message", data, room=room)
 
 if __name__ == "__main__":
     import eventlet
