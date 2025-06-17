@@ -1,61 +1,86 @@
-import eventlet
-eventlet.monkey_patch()
-
-
-from flask import Flask, render_template, request, redirect, send_from_directory, jsonify
-from flask_socketio import SocketIO
+from flask import Flask, send_file, send_from_directory, request
+from flask_socketio import SocketIO, join_room, emit
 from flask_cors import CORS
 import os
-import uuid
+import base64
 
-app = Flask(__name__, static_folder=".", static_url_path="")
+app = Flask(__name__)
+app.secret_key = "your_secret_key"
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-UPLOAD_FOLDER = 'uploads'
+
+UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Serve static files
 @app.route("/")
 def index():
-    return app.send_static_file("index.html")
+    return send_file("login.html")
 
-@app.route("/chat")
+@app.route("/chat.html")
 def chat():
-    return app.send_static_file("chat.html")
-
-@app.route("/upload", methods=["POST"])
-def upload():
-    file = request.files["file"]
-    filename = str(uuid.uuid4()) + "_" + file.filename
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(file_path)
-    return jsonify({"url": f"/uploads/{filename}"})
+    return send_file("chat.html")
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+# Handle new user joining
 @socketio.on("join")
-def on_join(data):
-    socketio.emit("private_message", {
+def handle_join(data):
+    username = data.get("username", "Anonymous")
+    room = data.get("room", "default")
+    join_room(room)
+    emit("message", {
         "username": "System",
-        "message": f"{data['username']} joined the room"
-    }, room=data["room"])
-    socketio.enter_room(request.sid, data["room"])
+        "message": f"✅ {username} joined the chat."
+    }, room=room)
 
-@socketio.on("private_message")
+# Handle text messages
+@socketio.on("message")
 def handle_message(data):
-    socketio.emit("private_message", data, room=data["room"])
+    username = data.get("username", "Anonymous")
+    room = data.get("room", "default")
+    message = data.get("message", "")
+    emit("message", {
+        "username": username,
+        "message": message
+    }, room=room)
 
+# Handle typing status
 @socketio.on("typing")
 def handle_typing(data):
-    socketio.emit("typing", {"username": data["username"]}, room=data["room"])
+    username = data.get("username", "Someone")
+    room = data.get("room", "default")
+    emit("typing", { "username": username }, room=room)
 
+# Handle file upload
+@socketio.on("file")
+def handle_file(data):
+    username = data.get("username", "Anonymous")
+    room = data.get("room", "default")
+    file_name = data.get("fileName", "file")
+    file_data = data.get("data", "")
+
+    # Decode base64 data and save to disk
+    if ";base64," in file_data:
+        file_content = file_data.split(";base64,")[1]
+        extension = file_name.split('.')[-1]
+        safe_name = f"{username}_{str(abs(hash(file_data)))}.{extension}"
+        file_path = os.path.join(UPLOAD_FOLDER, safe_name)
+
+        with open(file_path, "wb") as f:
+            f.write(base64.b64decode(file_content))
+
+        emit("message", {
+            "username": username,
+            "file": f"/uploads/{safe_name}",
+            "fileName": file_name
+        }, room=room)
+
+# Run the app
 if __name__ == "__main__":
-    import eventlet
-    eventlet.monkey_patch()
+    print("🚀 Server running at http://127.0.0.1:5000/")
     socketio.run(app, host="0.0.0.0", port=5000)
-
-
-
 
 

@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     :root {
       --day-bg: url('https://ik.imagekit.io/mrg7wer1a/1b6f6cfc6dc0b819b9aaa2a2c058b673.jpg?updatedAt=1750190591619');
@@ -30,10 +29,6 @@
       justify-content: center;
       height: 100vh;
       transition: background 0.8s ease;
-    }
-
-    body.dark-mode {
-      background: var(--night-bg) center/cover no-repeat fixed;
     }
 
     .chat-container {
@@ -143,8 +138,8 @@
     <div id="typing"></div>
     <div class="input-row">
       <input type="text" id="messageInput" placeholder="Type your message..." oninput="notifyTyping()" />
-      <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
-      <label for="file"><i class="fas fa-paperclip"></i></label>
+      <button onclick="sendMessage()">📨</button>
+      <label for="file">📁</label>
       <input type="file" id="file" onchange="sendFile()" />
     </div>
   </div>
@@ -157,22 +152,7 @@
     const messages = document.getElementById("messages");
     const typingStatus = document.getElementById("typing");
 
-    socket.emit("join", { username, room });
-
-    socket.on("message", data => {
-      const div = document.createElement("div");
-      div.className = "msg";
-
-      if (data.file) {
-        div.innerHTML = `<strong>${data.username}</strong>: <a href="${data.file}" download="${data.fileName}">📎 ${data.fileName}</a>`;
-      } else {
-        div.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
-      }
-
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    });
-
+    socket.emit("join", { username, roomkkkkkk  
     function sendMessage() {
       const msg = document.getElementById("messageInput").value.trim();
       if (!msg) return;
@@ -217,11 +197,16 @@
       messages.scrollTop = messages.scrollHeight;
     });
 
+    let darkMode = false;
+    const body = document.body;
+    const themeIcon = document.getElementById("theme-icon");
+
     function toggleTheme() {
-      const body = document.body;
-      const icon = document.getElementById("theme-icon");
-      body.classList.toggle("dark-mode");
-      icon.textContent = body.classList.contains("dark-mode") ? "☀️" : "🌙";
+      darkMode = !darkMode;
+      body.style.backgroundImage = darkMode
+        ? "var(--night-bg)"
+        : "var(--day-bg)";
+      themeIcon.textContent = darkMode ? "☀️" : "🌙";
     }
   </script>
 </body>

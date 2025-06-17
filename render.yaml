@@ -2,8 +2,10 @@ services:
   - type: web
     name: private-chat
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python server.py
-    plan: free
+    buildCommand: ""
+    startCommand: python3 server.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
 
 

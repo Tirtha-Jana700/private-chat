@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-img: url('https://ik.imagekit.io/mrg7wer1a/anime-style-boy-girl-couple%20(1).jpg?updatedAt=1750190593208');
+      --glass: rgba(255, 255, 255, 0.2);
+      --border: rgba(255, 255, 255, 0.3);
+      --text-color: #fff;
+      --btn-bg: #ff69b4;
+      --btn-hover: #ff85c1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Raleway', sans-serif;
+      background: var(--bg-img) center/cover no-repeat fixed;
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.6s ease;
+      backface-visibility: hidden;
+    }
+
+    .container {
+      backdrop-filter: blur(15px);
+      background-color: var(--glass);
+      border: 2px solid var(--border);
+      padding: 2rem;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      text-align: center;
+      transition: all 0.5s ease;
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      font-size: 2rem;
+      color: #ffb3dd;
+      transition: color 0.4s ease;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      border-radius: 12px;
+      border: none;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+      outline: none;
+      box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.25);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 12px;
+      background: var(--btn-bg);
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+      transform: scale(1.03);
+    }
+
+    @media (min-width: 768px) {
+      h2 {
+        font-size: 2.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🌸 Welcome! Log in to My Private Chat</h2>
+    <input id="username" type="text" placeholder="Enter your username" required />
+    <input id="room" type="text" placeholder="Enter room ID" required />
+    <button onclick="joinRoom()">Join Room</button>
+  </div>
+
+  <script>
+    function joinRoom() {
+      const username = document.getElementById('username').value.trim();
+      const room = document.getElementById('room').value.trim();
+      if (!username || !room) return alert('Please fill in both fields');
+      localStorage.setItem('chat_username', username);
+      localStorage.setItem('chat_room', room);
+      window.location.href = '/chat.html';
+    }
+  </script>
+</body>
+</html>
+
+

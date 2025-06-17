@@ -1,6 +1,4 @@
-Flask
+flask
 flask-socketio
-eventlet
-Flask-Cors
-
+flask-cors
 
