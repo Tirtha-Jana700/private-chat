@@ -54,9 +54,12 @@ def handle_typing(data):
     emit("typing", {"username": data["username"]}, room=data["room"], include_self=False)
 
 if __name__ == "__main__":
+    import os
     import eventlet
     eventlet.monkey_patch()
-    socketio.run(app, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))  # Use Render's port or default to 5000
+    socketio.run(app, host="0.0.0.0", port=port)
+
 
 
 
