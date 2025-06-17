@@ -131,8 +131,8 @@
     let username = "";
 
     function joinRoom() {
-        username = document.getElementById("username").value.trim();
-        room = document.getElementById("room").value.trim();
+        let username = localStorage.getItem("username");
+	let room = localStorage.getItem("room");
         if (!username || !room) return alert("Enter username and room name");
         socket.emit("join", { username, room });
     }
@@ -151,6 +151,22 @@
     messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
     chat.appendChild(messageElement);
     chat.scrollTop = chat.scrollHeight;
+});
+
+    const typingIndicator = document.createElement('p');
+typingIndicator.style.fontStyle = "italic";
+document.querySelector('.container').appendChild(typingIndicator);
+
+document.getElementById("message").addEventListener("input", () => {
+  socket.emit("typing", { username, room });
+});
+
+ socket.on("typing", (data) => {
+  typingIndicator.textContent = `${data.username} is typing...`;
+  clearTimeout(window.typingTimeout);
+  window.typingTimeout = setTimeout(() => {
+    typingIndicator.textContent = "";
+  }, 1500);
 });
 
     document.getElementById("uploadForm").addEventListener("submit", function(e) {

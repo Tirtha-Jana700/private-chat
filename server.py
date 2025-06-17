@@ -14,6 +14,16 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 def index():
     return render_template("index.html")
 
+from flask import send_from_directory
+
+@app.route("/")
+def serve_index():
+    return send_from_directory("public", "index.html")
+
+@app.route("/chat.html")
+def serve_chat():
+    return send_from_directory("public", "chat.html")
+
 @app.route("/upload", methods=["POST"])
 def upload():
     file = request.files["file"]
@@ -39,10 +49,15 @@ def handle_private_message(data):
     room = data["room"]
     emit("private_message", data, room=room)
 
+@socketio.on("typing")
+def handle_typing(data):
+    emit("typing", {"username": data["username"]}, room=data["room"], include_self=False)
+
 if __name__ == "__main__":
     import eventlet
     eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)
+
 
 
 

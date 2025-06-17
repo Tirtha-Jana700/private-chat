@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Join Chat</title>
+</head>
+<body>
+  <form onsubmit="joinRoom(event)">
+    <input type="text" id="username" placeholder="Enter your name" required />
+    <input type="text" id="room" placeholder="Enter room name" required />
+    <button type="submit">Join</button>
+  </form>
+
+  <script>
+    function joinRoom(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const room = document.getElementById('room').value;
+      localStorage.setItem('username', username);
+      localStorage.setItem('room', room);
+      window.location.href = "/chat.html";
+    }
+  </script>
+</body>
+</html>
