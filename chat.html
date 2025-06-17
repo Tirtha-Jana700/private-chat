@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Room</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body {
+      background: #111827;
+      color: #f3f4f6;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 1rem;
+    }
+    .chat-container {
+      max-width: 800px;
+      margin: auto;
+      background: #1f2937;
+      border-radius: 1rem;
+      padding: 2rem;
+    }
+    h2 {
+      color: #a78bfa;
+      text-align: center;
+    }
+    textarea {
+      width: 100%;
+      height: 250px;
+      resize: none;
+      border-radius: 0.75rem;
+      padding: 0.5rem;
+      background: #111827;
+      color: white;
+      border: 1px solid #4b5563;
+      margin-bottom: 1rem;
+    }
+    input, button {
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: none;
+      margin: 0.25rem 0;
+    }
+    #message {
+      width: calc(100% - 100px);
+      display: inline-block;
+    }
+    #sendBtn {
+      width: 80px;
+      background: #6366f1;
+      color: white;
+    }
+    #typingStatus {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 0.5rem;
+    }
+    #uploadForm input[type=file] {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <h2>💬 Private Room</h2>
+    <div id="typingStatus"></div>
+    <textarea id="chat" readonly></textarea><br/>
+    <input id="message" type="text" placeholder="Type a message" />
+    <button id="sendBtn">📤</button>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input id="file" type="file" />
+      <button type="submit">📎 Upload</button>
+    </form>
+  </div>
+<div style="text-align: right; margin-bottom: 1rem;">
+  <button id="modeToggle" style="padding: 0.5rem 1rem; border-radius: 0.5rem; border: none; background: #4b5563; color: white; cursor: pointer;">
+    🌙 Dark Mode
+  </button>
+</div>
+
+  <script>
+    const socket = io();
+    const username = localStorage.getItem("username");
+    const room = localStorage.getItem("room");
+
+    document.getElementById("message").addEventListener("input", () => {
+      socket.emit("typing", { username, room });
+    });
+
+    socket.emit("join", { username, room });
+
+    socket.on("private_message", data => {
+      const chat = document.getElementById("chat");
+      chat.value += `${data.username}: ${data.message}\n`;
+      chat.scrollTop = chat.scrollHeight;
+    });
+
+    socket.on("typing", ({ username }) => {
+      document.getElementById("typingStatus").textContent = `${username} is typing...`;
+      clearTimeout(window.typingTimeout);
+      window.typingTimeout = setTimeout(() => {
+        document.getElementById("typingStatus").textContent = "";
+      }, 1500);
+    });
+
+    document.getElementById("sendBtn").addEventListener("click", () => {
+      const msg = document.getElementById("message").value.trim();
+      if (msg) {
+        socket.emit("private_message", { username, room, message: msg });
+        document.getElementById("message").value = "";
+      }
+    });
+
+    document.getElementById("uploadForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const file = document.getElementById("file").files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      fetch("/upload", { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(data => {
+          socket.emit("private_message", {
+            username,
+            room,
+            message: `📎 File: ${location.origin}${data.url}`
+          });
+        });
+    });
+  </script>
+<script>
+  const toggleBtn = document.getElementById("modeToggle");
+  const chatContainer = document.querySelector(".chat-container");
+  let isDark = true;
+
+  function applyTheme() {
+    if (isDark) {
+      document.body.style.background = "#111827";
+      document.body.style.color = "#f3f4f6";
+      chatContainer.style.background = "#1f2937";
+      toggleBtn.innerText = "🌙 Dark Mode";
+    } else {
+      document.body.style.background = "#f3f4f6";
+      document.body.style.color = "#1f2937";
+      chatContainer.style.background = "#ffffff";
+      toggleBtn.innerText = "☀️ Light Mode";
+    }
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    isDark = !isDark;
+    applyTheme();
+  });
+
+  applyTheme(); // initial apply
+</script>
+</body>
+</html>
+
+

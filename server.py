@@ -1,64 +1,55 @@
-import eventlet
-eventlet.monkey_patch()
-
-from flask import Flask, render_template, request, send_from_directory
-from flask_socketio import SocketIO, join_room, emit
+from flask import Flask, render_template, request, redirect, send_from_directory, jsonify
+from flask_socketio import SocketIO
 from flask_cors import CORS
 import os
+import uuid
 
-app = Flask(__name__)
-CORS(app)  # Allow CORS for all domains
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+app = Flask(__name__, static_folder=".", static_url_path="")
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return app.send_static_file("index.html")
 
-from flask import send_from_directory
-
-@app.route("/")
-def serve_index():
-    return send_from_directory("public", "index.html")
-
-@app.route("/chat.html")
-def serve_chat():
-    return send_from_directory("public", "chat.html")
+@app.route("/chat")
+def chat():
+    return app.send_static_file("chat.html")
 
 @app.route("/upload", methods=["POST"])
 def upload():
     file = request.files["file"]
-    path = os.path.join("static/uploads", file.filename)
-    file.save(path)
-    return { "url": f"/static/uploads/{file.filename}" }
+    filename = str(uuid.uuid4()) + "_" + file.filename
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(file_path)
+    return jsonify({"url": f"/uploads/{filename}"})
 
-@app.route("/static/uploads/<filename>")
-def serve_file(filename):
-    return send_from_directory("static/uploads", filename)
+@app.route("/uploads/<filename>")
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 @socketio.on("join")
-def handle_join(data):
-    join_room(data["room"])
-    emit("private_message", {
+def on_join(data):
+    socketio.emit("private_message", {
         "username": "System",
-        "message": f"{data['username']} has joined the room."
+        "message": f"{data['username']} joined the room"
     }, room=data["room"])
+    socketio.enter_room(request.sid, data["room"])
 
-# server.py
 @socketio.on("private_message")
-def handle_private_message(data):
-    room = data["room"]
-    emit("private_message", data, room=room)
+def handle_message(data):
+    socketio.emit("private_message", data, room=data["room"])
 
 @socketio.on("typing")
 def handle_typing(data):
-    emit("typing", {"username": data["username"]}, room=data["room"], include_self=False)
+    socketio.emit("typing", {"username": data["username"]}, room=data["room"])
 
 if __name__ == "__main__":
-    import os
     import eventlet
     eventlet.monkey_patch()
-    port = int(os.environ.get("PORT", 5000))  # Use Render's port or default to 5000
-    socketio.run(app, host="0.0.0.0", port=port)
+    socketio.run(app, host="0.0.0.0", port=5000)
 
 
 

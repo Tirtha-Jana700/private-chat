@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Join Chat</title>
+  <style>
+    body {
+      background: #f9f9f9;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .login-container {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h2 {
+      color: #6366f1;
+      margin-bottom: 1rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+    }
+    button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      width: 100%;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #4f46e5;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>🚀 Join Chat</h2>
+    <input type="text" id="username" placeholder="Enter Username" />
+    <input type="text" id="room" placeholder="Enter Room ID" />
+    <button onclick="joinChat()">Join Room</button>
+  </div>
+  <div style="text-align: right; margin-bottom: 1rem;">
+    <button id="modeToggle" style="padding: 0.5rem 1rem; border-radius: 0.5rem; border: none; background: #4b5563; color: white; cursor: pointer;">
+      🌙 Dark Mode
+    </button>
+  </div>
+  <script>
+    function joinChat() {
+      const username = document.getElementById('username').value.trim();
+      const room = document.getElementById('room').value.trim();
+      if (!username || !room) return alert("Both fields are required!");
+      localStorage.setItem("username", username);
+      localStorage.setItem("room", room);
+      window.location.href = "/chat";
+    }
+  </script>
+  <script>
+  const toggleBtn = document.getElementById("modeToggle");
+  const container = document.querySelector(".login-container");
+  let isDark = false;
+
+  function applyTheme() {
+    if (isDark) {
+      document.body.style.background = "#111827";
+      document.body.style.color = "#f3f4f6";
+      container.style.background = "#1f2937";
+      toggleBtn.innerText = "🌙 Dark Mode";
+    } else {
+      document.body.style.background = "#f9f9f9";
+      document.body.style.color = "#1f2937";
+      container.style.background = "#ffffff";
+      toggleBtn.innerText = "☀️ Light Mode";
+    }
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    isDark = !isDark;
+    applyTheme();
+  });
+
+  applyTheme();
+</script>
+</body>
+</html>
+
+
