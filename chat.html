@@ -58,6 +58,49 @@
     #uploadForm input[type=file] {
       margin-top: 1rem;
     }
+  .theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+  }
+
+  .theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    background-color: #ccc;
+    border-radius: 34px;
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transition: 0.4s;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 8px;
+  }
+
+  .slider .icon {
+    font-size: 18px;
+    transition: transform 0.4s ease;
+  }
+
+  input:checked + .slider {
+    background-color: #4b5563;
+    justify-content: flex-end;
+    padding-right: 8px;
+  }
+
+  input:checked + .slider .icon {
+    transform: rotate(360deg);
+  }
   </style>
 </head>
 <body>
@@ -72,10 +115,13 @@
       <button type="submit">📎 Upload</button>
     </form>
   </div>
-<div style="text-align: right; margin-bottom: 1rem;">
-  <button id="modeToggle" style="padding: 0.5rem 1rem; border-radius: 0.5rem; border: none; background: #4b5563; color: white; cursor: pointer;">
-    🌙 Dark Mode
-  </button>
+<div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+  <label class="theme-switch">
+    <input type="checkbox" id="themeToggle">
+    <span class="slider">
+      <span class="icon" id="themeIcon">🌙</span>
+    </span>
+  </label>
 </div>
 
   <script>
@@ -128,30 +174,32 @@
     });
   </script>
 <script>
-  const toggleBtn = document.getElementById("modeToggle");
-  const chatContainer = document.querySelector(".chat-container");
-  let isDark = true;
+  const toggle = document.getElementById('themeToggle');
+  const icon = document.getElementById('themeIcon');
 
-  function applyTheme() {
+  function applyTheme(isDark) {
+    const container = document.querySelector('.chat-container') || document.querySelector('.login-container');
+
     if (isDark) {
-      document.body.style.background = "#111827";
-      document.body.style.color = "#f3f4f6";
-      chatContainer.style.background = "#1f2937";
-      toggleBtn.innerText = "🌙 Dark Mode";
+      document.body.style.background = '#111827';
+      document.body.style.color = '#f3f4f6';
+      container.style.background = '#1f2937';
+      icon.textContent = '🌙';
     } else {
-      document.body.style.background = "#f3f4f6";
-      document.body.style.color = "#1f2937";
-      chatContainer.style.background = "#ffffff";
-      toggleBtn.innerText = "☀️ Light Mode";
+      document.body.style.background = '#f3f4f6';
+      document.body.style.color = '#1f2937';
+      container.style.background = '#ffffff';
+      icon.textContent = '☀️';
     }
   }
 
-  toggleBtn.addEventListener("click", () => {
-    isDark = !isDark;
-    applyTheme();
+  toggle.addEventListener('change', () => {
+    applyTheme(toggle.checked);
   });
 
-  applyTheme(); // initial apply
+  // Default theme: dark mode
+  toggle.checked = true;
+  applyTheme(true);
 </script>
 </body>
 </html>
