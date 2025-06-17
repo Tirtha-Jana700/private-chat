@@ -80,7 +80,9 @@ def handle_file(data):
 
 # Run the app
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
+    import eventlet
+    eventlet.monkey_patch()
+    socketio.run(app, host="0.0.0.0", port=5000)
 
 
 
