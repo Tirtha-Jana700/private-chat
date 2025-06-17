@@ -1,3 +1,7 @@
+import eventlet
+eventlet.monkey_patch()
+
+
 from flask import Flask, render_template, request, redirect, send_from_directory, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
