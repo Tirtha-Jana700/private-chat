@@ -104,11 +104,10 @@
     <input id="username" type="text" placeholder="Enter your username" required />
     <input id="room" type="text" placeholder="Enter room ID" required />
     <button onclick="joinRoom()">Join Room</button>
+    <p style="margin-top: 1rem;">
+      <a href="#" onclick="showPolicy()" style="color: #eee; text-decoration: underline;">🔐 Privacy Policy</a>
+    </p>
   </div>
-
-<p style="margin-top: 1rem;">
-  <a href="#" onclick="showPolicy()" style="color: #eee; text-decoration: underline;">🔐 Privacy Policy</a>
-</p>
 
 <!-- Privacy Policy Modal -->
 <div id="policyModal" style="
@@ -132,18 +131,6 @@
     position: relative;
     animation: slideUp 0.4s ease;
   ">
-    <!-- Close Button (Top Right ❌) -->
-    <button onclick="hidePolicy()" style="
-      position: absolute;
-      top: 12px;
-      right: 16px;
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: #444;
-      font-weight: bold;
-    " aria-label="Close">❌</button>
 
     <h3 style="margin-top: 0;">🔐 Privacy Policy</h3>
     <p style="line-height: 1.6;">
