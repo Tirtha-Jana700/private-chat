@@ -139,6 +139,12 @@
       <h2>🌸 Welcome to My Private Chat</h2>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </div>
+    <div style="margin-bottom: 1rem; text-align: right;">
+      <label style="cursor: pointer; font-size: 0.9rem;">
+        <input type="checkbox" id="notifyToggle" style="transform: scale(1.2); margin-right: 6px;">
+        🔔 Enable Message Notifications
+      </label>
+    </div>
     <div id="messages"></div>
     <div id="typing"></div>
     <div class="input-row">
@@ -148,82 +154,111 @@
       <input type="file" id="file" onchange="sendFile()" />
     </div>
   </div>
+<script>
+  const socket = io();
+  const username = localStorage.getItem("chat_username") || "Guest";
+  const room = localStorage.getItem("chat_room") || "default";
 
-  <script>
-    const socket = io();
-    const username = localStorage.getItem("chat_username") || "Guest";
-    const room = localStorage.getItem("chat_room") || "default";
+  const messages = document.getElementById("messages");
+  const typingStatus = document.getElementById("typing");
 
-    const messages = document.getElementById("messages");
-    const typingStatus = document.getElementById("typing");
+  // 🔔 Ask for notification permission
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
 
-    socket.emit("join", { username, room });
+  // ✅ Restore notification toggle state
+  window.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("notifyToggle");
+    const saved = localStorage.getItem("notifications_enabled");
+    toggle.checked = saved === "true";
+  });
 
-    socket.on("message", data => {
-      const div = document.createElement("div");
-      div.className = "msg";
+  // 💾 Save toggle state on change
+  document.getElementById("notifyToggle").addEventListener("change", function () {
+    localStorage.setItem("notifications_enabled", this.checked);
+  });
 
-      if (data.file) {
-        div.innerHTML = `<strong>${data.username}</strong>: <a href="${data.file}" download="${data.fileName}">📎 ${data.fileName}</a>`;
-      } else {
-        div.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
-      }
+  // 👥 Join the room
+  socket.emit("join", { username, room });
 
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    });
+  // 💬 Handle incoming messages
+  socket.on("message", data => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
 
-    function sendMessage() {
-      const msg = document.getElementById("messageInput").value.trim();
-      if (!msg) return;
-      socket.emit("message", { username, room, message: msg });
-      document.getElementById("messageInput").value = "";
-      typingStatus.textContent = "";
-    }
-
-    function notifyTyping() {
-      socket.emit("typing", { username, room });
-    }
-
-    socket.on("typing", (data) => {
-      typingStatus.textContent = `${data.username} is typing...`;
-      clearTimeout(window.typingTimeout);
-      window.typingTimeout = setTimeout(() => {
-        typingStatus.textContent = "";
-      }, 2000);
-    });
-
-    function sendFile() {
-      const fileInput = document.getElementById("file");
-      const file = fileInput.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        socket.emit("file", {
-          username,
-          room,
-          fileName: file.name,
-          data: reader.result
+    // 🔔 Show browser notification if enabled
+    const notifyEnabled = document.getElementById("notifyToggle").checked;
+    if (document.hidden && notifyEnabled && data.username !== username) {
+      if (Notification.permission === "granted") {
+        new Notification(`${data.username}`, {
+          body: data.message,
+          icon: "https://cdn-icons-png.flaticon.com/512/597/597177.png"
         });
-      };
-      reader.readAsDataURL(file);
+      }
     }
+  });
 
-    socket.on("file", ({ username, fileName, data }) => {
-      const div = document.createElement("div");
-      div.className = "msg";
-      div.innerHTML = `<strong>${username}</strong>: <a href="${data}" download="${fileName}">📎 ${fileName}</a>`;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    });
+  // ✉️ Send message
+  function sendMessage() {
+    const msg = document.getElementById("messageInput").value.trim();
+    if (!msg) return;
+    socket.emit("message", { username, room, message: msg });
+    document.getElementById("messageInput").value = "";
+    typingStatus.textContent = "";
+  }
 
-    function toggleTheme() {
-      const body = document.body;
-      const icon = document.getElementById("theme-icon");
-      body.classList.toggle("dark-mode");
-      icon.textContent = body.classList.contains("dark-mode") ? "☀️" : "🌙";
-    }
-  </script>
+  // ✍️ Notify typing
+  function notifyTyping() {
+    socket.emit("typing", { username, room });
+  }
+
+  // 👀 Display typing status
+  socket.on("typing", (data) => {
+    typingStatus.textContent = `${data.username} is typing...`;
+    clearTimeout(window.typingTimeout);
+    window.typingTimeout = setTimeout(() => {
+      typingStatus.textContent = "";
+    }, 2000);
+  });
+
+  // 📎 Send file
+  function sendFile() {
+    const fileInput = document.getElementById("file");
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      socket.emit("file", {
+        username,
+        room,
+        fileName: file.name,
+        data: reader.result
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 📂 Receive file
+  socket.on("file", ({ username, fileName, data }) => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.innerHTML = `<strong>${username}</strong>: <a href="${data}" download="${fileName}">📎 ${fileName}</a>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  });
+
+  // 🌗 Toggle theme
+  function toggleTheme() {
+    const body = document.body;
+    const icon = document.getElementById("theme-icon");
+    body.classList.toggle("dark-mode");
+    icon.textContent = body.classList.contains("dark-mode") ? "☀️" : "🌙";
+  }
+</script>
 </body>
 </html>
 
