@@ -6,6 +6,10 @@ from flask_socketio import SocketIO, join_room, emit
 from flask_cors import CORS
 import os
 import base64
+import time
+
+user_sessions = {}           # sid → {username, room}
+last_disconnect = {}         # username → last disconnect timestamp
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
@@ -33,11 +37,48 @@ def uploaded_file(filename):
 def handle_join(data):
     username = data.get("username", "Anonymous")
     room = data.get("room", "default")
+    sid = request.sid
+
     join_room(room)
+    user_sessions[sid] = {"username": username, "room": room}
+
+    # Check if user reconnected recently
+    now = time.time()
+    last = last_disconnect.get(username, 0)
+    rejoined = now - last <= 3
+
+    if rejoined:
+        msg = f"🔄 {username} reconnected."
+    else:
+        msg = f"✅ {username} joined the chat."
+
     emit("message", {
         "username": "System",
-        "message": f"✅ {username} joined the chat."
+        "message": msg
     }, room=room)
+
+    # Clear previous disconnect time
+    if username in last_disconnect:
+        del last_disconnect[username]
+
+# Handle if user disconnect
+@socketio.on("disconnect")
+def handle_disconnect():
+    sid = request.sid
+    user = user_sessions.get(sid)
+
+    if user:
+        username = user["username"]
+        room = user["room"]
+        emit("message", {
+            "username": "System",
+            "message": f"🚪 {username} left the chat."
+        }, room=room)
+
+        # Save last disconnect time
+        last_disconnect[username] = time.time()
+
+        del user_sessions[sid]
 
 # Handle text messages
 @socketio.on("message")
@@ -86,6 +127,7 @@ if __name__ == "__main__":
     import eventlet
     eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)
+
 
 
 
