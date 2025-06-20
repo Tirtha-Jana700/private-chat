@@ -248,7 +248,21 @@ socket.on("file", ({ username, fileName, data }) => {
 
   const div = document.createElement("div");
   div.className = "msg";
-  div.innerHTML = `<strong>${username}</strong>: <a href="${data}" download="${fileName}">📎 ${fileName}</a>`;
+  div.innerHTML = `
+    <strong>${username}</strong>: 
+    <a href="${data}" download="${fileName}" style="
+      display: inline-flex; 
+      align-items: center; 
+      background: rgba(255, 255, 255, 0.1); 
+      padding: 6px 10px; 
+      border-radius: 10px; 
+      color: #a29bfe; 
+      text-decoration: none; 
+      font-weight: 500;
+    ">
+      📎 ${fileName}
+    </a>
+  `;
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
 });
