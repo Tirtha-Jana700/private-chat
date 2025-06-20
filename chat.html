@@ -313,8 +313,6 @@
   }
 </script>
 <script>
-// 📎 send file
-
 let currentUpload = null;
 
 function sendFile() {
@@ -360,6 +358,7 @@ function sendFile() {
     } else {
       progressText.textContent = "Upload failed ❌";
     }
+
     setTimeout(() => {
       progressContainer.style.display = "none";
       progressBar.style.width = "0%";
@@ -378,6 +377,7 @@ function sendFile() {
     currentUpload = null;
   };
 
+  xhr.open("POST", "/upload", true);
   xhr.send(formData);
 }
 
@@ -400,6 +400,8 @@ function cancelUpload() {
   }
 }
 </script>
+
+
 </body>
 </html>
 
