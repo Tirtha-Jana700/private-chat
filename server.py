@@ -109,7 +109,10 @@ def handle_disconnect():
 
 # Run the app
 if __name__ == "__main__":
-    print("🚀 Server running at http://127.0.0.1:5000/")
+    import eventlet
+    eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)
+
+
 
 
