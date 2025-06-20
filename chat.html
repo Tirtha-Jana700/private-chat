@@ -132,6 +132,23 @@
       transform: rotate(20deg);
     }
   </style>
+<style>
+@keyframes gradientAnimation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+#cancelUploadBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(255, 100, 160, 0.7);
+}
+
+#cancelUploadBtn:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+</style>
 </head>
 <body>
   <div class="chat-container">
@@ -147,6 +164,49 @@
       <label for="file"><i class="fas fa-paperclip"></i></label>
       <input type="file" id="file" onchange="sendFile()" />
     </div>
+   <!-- Upload Progress Bar -->
+  <div id="progressContainer" style="display: none; margin-top: 12px;">
+    <div style="
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    height: 14px;
+    box-shadow: 0 0 10px rgba(100, 100, 255, 0.3);
+  ">
+    <div id="progressBar" style="
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(270deg, #8ec5fc, #e0c3fc);
+      background-size: 400% 400%;
+      animation: gradientAnimation 2s ease infinite;
+      border-radius: 14px;
+      transition: width 0.4s ease-in-out;
+    "></div>
+  </div>
+  <p id="progressText" style="
+    text-align: center;
+    font-size: 0.9rem;
+    color: #dcdcff;
+    margin-top: 6px;
+    font-weight: 500;
+  ">Uploading... 0%</p>
+  <button id="cancelUploadBtn" onclick="cancelUpload()" style="
+    margin: 10px auto 0;
+    display: none;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(90deg, #ff758c, #ff7eb3);
+    color: white;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(255, 120, 180, 0.4);
+    transition: all 0.3s ease;
+  ">Cancel Upload</button>
+   </div>
   </div>
 <script>
   const socket = io();
@@ -244,23 +304,6 @@
     typingStatus.textContent = "";
   }
 
-  // 📎 Send a file
-  function sendFile() {
-    const fileInput = document.getElementById("file");
-    const file = fileInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      socket.emit("file", {
-        username,
-        room,
-        fileName: file.name,
-        data: reader.result
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-
   // 🌗 Toggle day/night mode
   function toggleTheme() {
     const body = document.body;
@@ -268,6 +311,94 @@
     body.classList.toggle("dark-mode");
     icon.textContent = body.classList.contains("dark-mode") ? "☀️" : "🌙";
   }
+</script>
+<script>
+// 📎 send file
+
+let currentUpload = null;
+
+function sendFile() {
+  const fileInput = document.getElementById("file");
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const progressBar = document.getElementById("progressBar");
+  const progressContainer = document.getElementById("progressContainer");
+  const progressText = document.getElementById("progressText");
+  const cancelBtn = document.getElementById("cancelUploadBtn");
+
+  progressBar.style.width = "0%";
+  progressContainer.style.display = "block";
+  cancelBtn.style.display = "inline-block";
+  progressText.textContent = "Uploading... 0%";
+
+  const xhr = new XMLHttpRequest();
+  currentUpload = xhr;
+
+  xhr.upload.onprogress = function (e) {
+    if (e.lengthComputable) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      progressBar.style.width = percent + "%";
+      progressText.textContent = `Uploading... ${percent}%`;
+    }
+  };
+
+  xhr.onload = function () {
+    cancelBtn.style.display = "none";
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      if (data.url) {
+        socket.emit("message", {
+          username,
+          room,
+          message: `📁 <a href="${data.url}" download="${file.name}" style="color:#a29bfe;text-decoration:none;">${file.name}</a>`
+        });
+      }
+    } else {
+      progressText.textContent = "Upload failed ❌";
+    }
+    setTimeout(() => {
+      progressContainer.style.display = "none";
+      progressBar.style.width = "0%";
+      progressText.textContent = "";
+    }, 1000);
+    currentUpload = null;
+  };
+
+  xhr.onerror = function () {
+    cancelBtn.style.display = "none";
+    progressText.textContent = "Upload failed ❌";
+    setTimeout(() => {
+      progressContainer.style.display = "none";
+      progressBar.style.width = "0%";
+    }, 1000);
+    currentUpload = null;
+  };
+
+  xhr.send(formData);
+}
+
+function cancelUpload() {
+  if (currentUpload) {
+    currentUpload.abort();
+    currentUpload = null;
+    const progressText = document.getElementById("progressText");
+    const cancelBtn = document.getElementById("cancelUploadBtn");
+    const progressBar = document.getElementById("progressBar");
+    const progressContainer = document.getElementById("progressContainer");
+
+    cancelBtn.style.display = "none";
+    progressText.textContent = "Upload cancelled ❌";
+    progressBar.style.width = "0%";
+    setTimeout(() => {
+      progressContainer.style.display = "none";
+      progressText.textContent = "";
+    }, 1500);
+  }
+}
 </script>
 </body>
 </html>
