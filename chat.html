@@ -139,12 +139,6 @@
       <h2>🌸 Welcome to My Private Chat</h2>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </div>
-    <div style="margin-bottom: 1rem; text-align: right;">
-      <label style="cursor: pointer; font-size: 0.9rem;">
-        <input type="checkbox" id="notifyToggle" style="transform: scale(1.2); margin-right: 6px;">
-        🔔 Enable Message Notifications
-      </label>
-    </div>
     <div id="messages"></div>
     <div id="typing"></div>
     <div class="input-row">
@@ -162,61 +156,77 @@
   const messages = document.getElementById("messages");
   const typingStatus = document.getElementById("typing");
 
-  // 🔔 Ask for notification permission
-  if ("Notification" in window && Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
-
-  // ✅ Restore notification toggle state
-  window.addEventListener("DOMContentLoaded", () => {
-    const toggle = document.getElementById("notifyToggle");
-    const saved = localStorage.getItem("notifications_enabled");
-    toggle.checked = saved === "true";
-  });
-
-  // 💾 Save toggle state on change
-  document.getElementById("notifyToggle").addEventListener("change", function () {
-    localStorage.setItem("notifications_enabled", this.checked);
-  });
-
   // 👥 Join the room
   socket.emit("join", { username, room });
 
-  // 💬 Handle incoming messages
+  // 💬 Handle incoming messages (with URL formatting)
   socket.on("message", data => {
     const div = document.createElement("div");
     div.className = "msg";
-    div.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
+
+    // Detect and convert links
+    const formattedMessage = data.message.replace(
+      /(https?:\/\/[^\s]+)/g,
+      (url) => `<a href="${url}" target="_blank" style="color:#74c0fc; text-decoration: underline;">${url}</a>`
+    );
+
+    div.innerHTML = `
+      <strong>${data.username}</strong>:
+      <div style="
+        background: rgba(255, 255, 255, 0.08);
+        padding: 10px 12px;
+        border-radius: 12px;
+        display: inline-block;
+        margin-top: 4px;
+        max-width: 80%;
+        word-wrap: break-word;
+      ">
+        ${formattedMessage}
+      </div>
+    `;
+
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
-
-    // 🔔 Show browser notification if enabled
-    const notifyEnabled = document.getElementById("notifyToggle").checked;
-    if (document.hidden && notifyEnabled && data.username !== username) {
-      if (Notification.permission === "granted") {
-        new Notification(`${data.username}`, {
-          body: data.message,
-          icon: "https://cdn-icons-png.flaticon.com/512/597/597177.png"
-        });
-      }
-    }
   });
 
-  // ✉️ Send message
-  function sendMessage() {
-    const msg = document.getElementById("messageInput").value.trim();
-    if (!msg) return;
-    socket.emit("message", { username, room, message: msg });
-    document.getElementById("messageInput").value = "";
-    typingStatus.textContent = "";
-  }
+  // 📂 Receive file inside bubble
+  socket.on("file", ({ username, fileName, data }) => {
+    if (!username || !fileName || !data) return;
+
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.style.wordWrap = "break-word";
+    div.innerHTML = `
+      <strong>${username}</strong>:
+      <div style="
+        background: rgba(255, 255, 255, 0.08);
+        padding: 10px 12px;
+        border-radius: 12px;
+        display: inline-block;
+        margin-top: 4px;
+        max-width: 80%;
+        word-wrap: break-word;
+      ">
+        <a href="${data}" download="${fileName}" style="
+          color: #a29bfe;
+          text-decoration: none;
+          font-weight: 500;
+          word-wrap: break-word;
+        ">
+          📎 ${fileName}
+        </a>
+      </div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  });
 
   // ✍️ Notify typing
   function notifyTyping() {
     socket.emit("typing", { username, room });
   }
 
-  // 👀 Display typing status
+  // 👀 Show typing status
   socket.on("typing", (data) => {
     typingStatus.textContent = `${data.username} is typing...`;
     clearTimeout(window.typingTimeout);
@@ -225,7 +235,16 @@
     }, 2000);
   });
 
-  // 📎 Send file
+  // ✉️ Send a message
+  function sendMessage() {
+    const msg = document.getElementById("messageInput").value.trim();
+    if (!msg) return;
+    socket.emit("message", { username, room, message: msg });
+    document.getElementById("messageInput").value = "";
+    typingStatus.textContent = "";
+  }
+
+  // 📎 Send a file
   function sendFile() {
     const fileInput = document.getElementById("file");
     const file = fileInput.files[0];
@@ -242,32 +261,7 @@
     reader.readAsDataURL(file);
   }
 
-  // 📂 Receive file
-socket.on("file", ({ username, fileName, data }) => {
-  if (!username || !fileName || !data) return;
-
-  const div = document.createElement("div");
-  div.className = "msg";
-  div.innerHTML = `
-    <strong>${username}</strong>: 
-    <a href="${data}" download="${fileName}" style="
-      display: inline-flex; 
-      align-items: center; 
-      background: rgba(255, 255, 255, 0.1); 
-      padding: 6px 10px; 
-      border-radius: 10px; 
-      color: #a29bfe; 
-      text-decoration: none; 
-      font-weight: 500;
-    ">
-      📎 ${fileName}
-    </a>
-  `;
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-});
-
-  // 🌗 Toggle theme
+  // 🌗 Toggle day/night mode
   function toggleTheme() {
     const body = document.body;
     const icon = document.getElementById("theme-icon");
