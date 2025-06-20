@@ -1,25 +1,25 @@
 import eventlet
 eventlet.monkey_patch()
 
-from flask import Flask, send_file, send_from_directory, request
+from flask import Flask, send_file, send_from_directory, request, jsonify
 from flask_socketio import SocketIO, join_room, emit
 from flask_cors import CORS
 import os
-import base64
 import time
 
+# --- Config ---
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 user_sessions = {}           # sid → {username, room}
-last_disconnect = {}         # username → last disconnect timestamp
+last_disconnect = {}         # username → timestamp
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Serve static files
+# --- Serve Files ---
 @app.route("/")
 def index():
     return send_file("login.html")
@@ -32,7 +32,17 @@ def chat():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-# Handle new user joining
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "No file provided"}), 400
+    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(file_path)
+    return jsonify({"url": f"/uploads/{file.filename}"}), 200
+
+# --- Socket Events ---
+
 @socketio.on("join")
 def handle_join(data):
     username = data.get("username", "Anonymous")
@@ -46,17 +56,13 @@ def handle_join(data):
     last = last_disconnect.get(username, 0)
     rejoined = now - last <= 3
 
-    msg = f"🔄 {username} reconnected." if rejoined else f"✅ {username} joined the chat."
+    msg = f"🔄 {username} reconnected." if rejoined else f"✅ {username} joined the room."
 
-    emit("message", {
-        "username": "System",
-        "message": msg
-    }, room=room)
+    emit("message", {"username": "System", "message": msg}, room=room)
 
     if username in last_disconnect:
         del last_disconnect[username]
 
-# Handle user messages
 @socketio.on("message")
 def handle_message(data):
     sid = request.sid
@@ -68,7 +74,6 @@ def handle_message(data):
         "message": data.get("message", "")
     }, room=user["room"])
 
-# Handle typing status
 @socketio.on("typing")
 def handle_typing(data):
     sid = request.sid
@@ -77,7 +82,6 @@ def handle_typing(data):
         return
     emit("typing", {"username": user["username"]}, room=user["room"])
 
-# Handle file sharing
 @socketio.on("file")
 def handle_file(data):
     sid = request.sid
@@ -94,7 +98,6 @@ def handle_file(data):
         "data": file_data
     }, room=user["room"])
 
-# Handle disconnects
 @socketio.on("disconnect")
 def handle_disconnect():
     sid = request.sid
@@ -107,12 +110,8 @@ def handle_disconnect():
         last_disconnect[user["username"]] = time.time()
         del user_sessions[sid]
 
-# Run the app
+# --- Run App ---
 if __name__ == "__main__":
-    import eventlet
-    eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)
-
-
 
 
