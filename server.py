@@ -42,92 +42,74 @@ def handle_join(data):
     join_room(room)
     user_sessions[sid] = {"username": username, "room": room}
 
-    # Check if user reconnected recently
     now = time.time()
     last = last_disconnect.get(username, 0)
     rejoined = now - last <= 3
 
-    if rejoined:
-        msg = f"🔄 {username} reconnected."
-    else:
-        msg = f"✅ {username} joined the chat."
+    msg = f"🔄 {username} reconnected." if rejoined else f"✅ {username} joined the chat."
 
     emit("message", {
         "username": "System",
         "message": msg
     }, room=room)
 
-    # Clear previous disconnect time
     if username in last_disconnect:
         del last_disconnect[username]
 
-# Handle if user disconnect
-@socketio.on("disconnect")
-def handle_disconnect():
-    sid = request.sid
-    user = user_sessions.get(sid)
-
-    if user:
-        username = user["username"]
-        room = user["room"]
-        emit("message", {
-            "username": "System",
-            "message": f"🚪 {username} left the chat."
-        }, room=room)
-
-        # Save last disconnect time
-        last_disconnect[username] = time.time()
-
-        del user_sessions[sid]
-
-# Handle text messages
+# Handle user messages
 @socketio.on("message")
 def handle_message(data):
-    username = data.get("username", "Anonymous")
-    room = data.get("room", "default")
-    message = data.get("message", "")
+    sid = request.sid
+    user = user_sessions.get(sid)
+    if not user:
+        return
     emit("message", {
-        "username": username,
-        "message": message
-    }, room=room)
+        "username": user["username"],
+        "message": data.get("message", "")
+    }, room=user["room"])
 
 # Handle typing status
 @socketio.on("typing")
 def handle_typing(data):
-    username = data.get("username", "Someone")
-    room = data.get("room", "default")
-    emit("typing", { "username": username }, room=room)
+    sid = request.sid
+    user = user_sessions.get(sid)
+    if not user:
+        return
+    emit("typing", {"username": user["username"]}, room=user["room"])
 
-# Handle file upload
+# Handle file sharing
 @socketio.on("file")
 def handle_file(data):
-    username = data.get("username", "Anonymous")
-    room = data.get("room", "default")
-    file_name = data.get("fileName", "file")
+    sid = request.sid
+    user = user_sessions.get(sid)
+    if not user:
+        return
+
+    file_name = data.get("fileName", "file.txt")
     file_data = data.get("data", "")
 
-    # Decode base64 data and save to disk
-    if ";base64," in file_data:
-        file_content = file_data.split(";base64,")[1]
-        extension = file_name.split('.')[-1]
-        safe_name = f"{username}_{str(abs(hash(file_data)))}.{extension}"
-        file_path = os.path.join(UPLOAD_FOLDER, safe_name)
+    emit("file", {
+        "username": user["username"],
+        "fileName": file_name,
+        "data": file_data
+    }, room=user["room"])
 
-        with open(file_path, "wb") as f:
-            f.write(base64.b64decode(file_content))
-
+# Handle disconnects
+@socketio.on("disconnect")
+def handle_disconnect():
+    sid = request.sid
+    user = user_sessions.get(sid)
+    if user:
         emit("message", {
-            "username": username,
-            "file": f"/uploads/{safe_name}",
-            "fileName": file_name
-        }, room=room)
+            "username": "System",
+            "message": f"🚪 {user['username']} left the chat."
+        }, room=user["room"])
+        last_disconnect[user["username"]] = time.time()
+        del user_sessions[sid]
 
 # Run the app
 if __name__ == "__main__":
-    import eventlet
-    eventlet.monkey_patch()
+    print("🚀 Server running at http://127.0.0.1:5000/")
     socketio.run(app, host="0.0.0.0", port=5000)
-
-
 
 

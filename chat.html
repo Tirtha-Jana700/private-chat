@@ -243,13 +243,15 @@
   }
 
   // 📂 Receive file
-  socket.on("file", ({ username, fileName, data }) => {
-    const div = document.createElement("div");
-    div.className = "msg";
-    div.innerHTML = `<strong>${username}</strong>: <a href="${data}" download="${fileName}">📎 ${fileName}</a>`;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  });
+socket.on("file", ({ username, fileName, data }) => {
+  if (!username || !fileName || !data) return;
+
+  const div = document.createElement("div");
+  div.className = "msg";
+  div.innerHTML = `<strong>${username}</strong>: <a href="${data}" download="${fileName}">📎 ${fileName}</a>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
 
   // 🌗 Toggle theme
   function toggleTheme() {
