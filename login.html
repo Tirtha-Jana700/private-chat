@@ -4,19 +4,16 @@
   <meta charset="UTF-8" />
   <title>Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-img: url('https://ik.imagekit.io/mrg7wer1a/anime-style-boy-girl-couple%20(1).jpg?updatedAt=1750190593208');
-      --glass: rgba(255, 255, 255, 0.2);
+      --accent-color: #a5d8ff;
+      --glass: rgba(255, 255, 255, 0.1);
       --border: rgba(255, 255, 255, 0.3);
-      --text-color: #fff;
-      --btn-bg: #ff69b4;
-      --btn-hover: #ff85c1;
-    }
-
-    * {
-      box-sizing: border-box;
+      --text-color: #ffffff;
+      --btn-bg: #6c5ce7;
+      --btn-hover: #a29bfe;
     }
 
     html, body {
@@ -30,7 +27,7 @@
       align-items: center;
       justify-content: center;
       transition: background 0.6s ease;
-      backface-visibility: hidden;
+      overflow: hidden;
     }
 
     .container {
@@ -39,19 +36,21 @@
       border: 2px solid var(--border);
       padding: 2rem;
       border-radius: 20px;
-      max-width: 600px;
+      max-width: 400px;
       width: 90%;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
       text-align: center;
-      transition: all 0.5s ease;
+      animation: fadeIn 1.5s ease;
+      position: relative;
+      z-index: 2;
     }
 
     h2 {
       margin-bottom: 1.5rem;
       font-weight: 700;
-      font-size: 2rem;
-      color: #ffb3dd;
-      transition: color 0.4s ease;
+      font-size: 1.8rem;
+      color: var(--accent-color);
+      text-shadow: 0 0 10px rgba(165, 216, 255, 0.7);
     }
 
     input {
@@ -61,21 +60,19 @@
       border-radius: 12px;
       border: none;
       font-size: 1rem;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15);
       color: var(--text-color);
       outline: none;
-      box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.1);
-      transition: all 0.3s ease;
+      box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.2);
     }
 
-    input:focus {
-      background: rgba(255, 255, 255, 0.2);
-      box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.25);
+    input::placeholder {
+      color: #eee;
     }
 
     button {
       width: 100%;
-      padding: 0.8rem;
+      padding: 0.75rem;
       border: none;
       border-radius: 12px;
       background: var(--btn-bg);
@@ -83,7 +80,8 @@
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s ease, transform 0.3s ease;
+      transition: background 0.4s ease, transform 0.3s;
+      box-shadow: 0 0 12px rgba(108, 92, 231, 0.5);
     }
 
     button:hover {
@@ -91,98 +89,175 @@
       transform: scale(1.03);
     }
 
-    @media (min-width: 768px) {
-      h2 {
-        font-size: 2.2rem;
-      }
+    .privacy-link {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .privacy-link a {
+      color: #a5d8ff;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      padding: 2rem;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .modal-content {
+      background-color: var(--glass);
+      color: var(--text-color);
+      max-width: 480px;
+      width: auto;
+      margin: auto;
+      padding: 2rem 1.5rem;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      animation: fadeIn 0.4s ease;
+      text-align: center;
+    }
+
+    .close-btn {
+      margin-top: 1.5rem;
+      padding: 0.7rem 1.4rem;
+      font-size: 1rem;
+      background-color: var(--btn-bg);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+      background-color: var(--btn-hover);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .particles span {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: transparent;
+      animation: floatStar 10s linear infinite;
+    }
+
+    .particles span::before,
+    .particles span::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: white;
+      border-radius: 2px;
+      box-shadow: 0 0 8px #ffffffaa;
+    }
+
+    .particles span::before {
+      transform: rotate(45deg);
+    }
+
+    .particles span::after {
+      transform: rotate(-45deg);
+    }
+
+    @keyframes floatStar {
+      0% { transform: translateY(0) scale(1); opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+    }
+
+    @media (max-width: 500px) {
+      h2 { font-size: 1.5rem; }
+      .container { padding: 1.5rem 1rem; }
     }
   </style>
 </head>
 <body>
+  <div class="particles" id="particles"></div>
+
   <div class="container">
-    <h2>🌸 Welcome! Log in to My Private Chat</h2>
-    <input id="username" type="text" placeholder="Enter your username" required />
-    <input id="room" type="text" placeholder="Enter room ID" required />
+    <h2>🌸Welcome! Login into My Private Chat</h2>
+    <input id="username" type="text" placeholder="Enter your username" />
+    <input id="room" type="text" placeholder="Enter room ID" />
     <button onclick="joinRoom()">Join Room</button>
-    <p style="margin-top: 1rem;">
-      <a href="#" onclick="showPolicy()" style="color: #eee; text-decoration: underline;">🔐 Privacy Policy</a>
+
+    <p class="privacy-link">
+      <a onclick="showPolicy()">View Privacy Policy</a>
     </p>
   </div>
 
-<!-- Privacy Policy Modal -->
-<div id="policyModal" style="
-  display: none;
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(5px);
-  z-index: 1000;
-  animation: fadeIn 0.4s ease;
-">
-  <div style="
-    background: rgba(255, 255, 255, 0.9);
-    color: #111;
-    max-width: 600px;
-    margin: 10% auto;
-    padding: 2rem;
-    border-radius: 20px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    font-family: 'Raleway', sans-serif;
-    position: relative;
-    animation: slideUp 0.4s ease;
-  ">
-
-    <h3 style="margin-top: 0;">🔐 Privacy Policy</h3>
-    <p style="line-height: 1.6;">
-      This chat app does not permanently store messages or files.<br />
-      All communication happens in real-time.<br />
-      No tracking, no ads, no personal data collection.
-    </p>
-
-    <!-- Optional bottom close button -->
-    <button onclick="hidePolicy()" style="
-      margin-top: 1.5rem;
-      padding: 0.6rem 1.2rem;
-      border: none;
-      background: hotpink;
-      color: white;
-      border-radius: 12px;
-      font-weight: bold;
-      cursor: pointer;
-    ">Close</button>
+  <!-- Privacy Modal -->
+  <div id="policyModal" class="modal">
+    <div class="modal-content">
+      <h4>🔒 Privacy Policy</h4>
+      <p>This private chat app does not collect or store any personal data on the server.</p>
+      <p>Usernames and room IDs are only stored locally on your device to enable private communication.</p>
+      <p>By using this chat, you agree to communicate respectfully and avoid sharing sensitive or illegal content.</p>
+      <button class="close-btn" onclick="closePolicy()">Close</button>
+    </div>
   </div>
-</div>
-
-<style>
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes slideUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
-  }
-</style>
 
   <script>
     function joinRoom() {
       const username = document.getElementById('username').value.trim();
       const room = document.getElementById('room').value.trim();
-      if (!username || !room) return alert('Please fill in both fields');
-      localStorage.setItem('chat_username', username);
-      localStorage.setItem('chat_room', room);
-      window.location.href = '/chat.html';
+      if (!username || !room) return alert("Please fill in both fields");
+      localStorage.setItem("chat_username", username);
+      localStorage.setItem("chat_room", room);
+      window.location.href = "/chat.html";
+    }
+
+    function showPolicy() {
+      document.getElementById("policyModal").style.display = "block";
+    }
+
+    function closePolicy() {
+      document.getElementById("policyModal").style.display = "none";
+    }
+
+    window.onclick = function(e) {
+      const modal = document.getElementById("policyModal");
+      if (e.target == modal) closePolicy();
+    };
+
+    // Floating stars
+    const particles = document.getElementById("particles");
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement("span");
+      star.style.left = Math.random() * 100 + "vw";
+      star.style.top = Math.random() * 100 + "vh";
+      star.style.animationDuration = (4 + Math.random() * 8) + "s";
+      star.style.opacity = Math.random();
+      particles.appendChild(star);
     }
   </script>
-<script>
-  function showPolicy() {
-    document.getElementById("policyModal").style.display = "block";
-  }
-  function hidePolicy() {
-    document.getElementById("policyModal").style.display = "none";
-  }
-</script>
 </body>
 </html>
-
-

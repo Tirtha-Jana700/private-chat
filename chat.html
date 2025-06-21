@@ -18,11 +18,12 @@
       --button-bg: #6c5ce7;
       --button-hover: #a29bfe;
     }
-
+    
     body {
       margin: 0;
       font-family: 'Raleway', sans-serif;
       background: var(--day-bg) center/cover no-repeat fixed;
+      background-attachment: fixed;
       color: var(--text-color);
       display: flex;
       flex-direction: column;
@@ -30,7 +31,7 @@
       justify-content: center;
       height: 100vh;
       transition: background 0.8s ease;
-      text-align:center;
+      text-align: center;
     }
 
     body.dark-mode {
@@ -401,8 +402,6 @@ function cancelUpload() {
   }
 }
 </script>
-
-
 </body>
 </html>
 
