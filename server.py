@@ -4,6 +4,7 @@ eventlet.monkey_patch()
 from flask import Flask, send_file, send_from_directory, request, jsonify
 from flask_socketio import SocketIO, join_room, emit
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import os
 import time
 
@@ -32,17 +33,24 @@ def chat():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+# 🔐 File Upload API with sanitization
 @app.route("/upload", methods=["POST"])
 def upload_file():
     file = request.files.get("file")
     if not file:
         return jsonify({"error": "No file provided"}), 400
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+
+    safe_name = secure_filename(file.filename)
+    timestamp = int(time.time())
+    name, ext = os.path.splitext(safe_name)
+    unique_filename = f"{name}_{timestamp}{ext}"
+    
+    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
     file.save(file_path)
-    return jsonify({"url": f"/uploads/{file.filename}"}), 200
+    
+    return jsonify({"url": f"/uploads/{unique_filename}"}), 200
 
 # --- Socket Events ---
-
 @socketio.on("join")
 def handle_join(data):
     username = data.get("username", "Anonymous")
@@ -57,7 +65,6 @@ def handle_join(data):
     rejoined = now - last <= 3
 
     msg = f"🔄 {username} reconnected." if rejoined else f"✅ {username} joined the room."
-
     emit("message", {"username": "System", "message": msg}, room=room)
 
     if username in last_disconnect:
@@ -112,6 +119,10 @@ def handle_disconnect():
 
 # --- Run App ---
 if __name__ == "__main__":
+    import eventlet
+    eventlet.monkey_patch()
+    print("🚀 Server running at http://127.0.0.1:5000/")
     socketio.run(app, host="0.0.0.0", port=5000)
+
 
 
