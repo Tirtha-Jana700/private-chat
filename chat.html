@@ -19,19 +19,18 @@
       --button-hover: #a29bfe;
     }
     
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: 'Raleway', sans-serif;
       background: var(--day-bg) center/cover no-repeat fixed;
-      background-attachment: fixed;
       color: var(--text-color);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      overflow-x: hidden; /* ✅ Prevent horizontal scroll */
       transition: background 0.8s ease;
-      text-align: center;
     }
 
     body.dark-mode {
@@ -44,12 +43,12 @@
       border: 2px solid var(--border);
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      max-width: 600px;
-      width: 90%;
+      width: 100%; /* ✅ Full width for small screens */
+      max-width: 600px; /* ✅ Still limit it nicely on large screens */
       padding: 1.5rem;
       text-align: center;
+      box-sizing: border-box; /* ✅ Important for padding consistency */
     }
-
     #messages {
       height: 300px;
       overflow-y: auto;
