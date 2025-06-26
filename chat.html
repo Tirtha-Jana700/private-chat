@@ -149,21 +149,6 @@
   transform: scale(0.97);
   opacity: 0.85;
 }
-#recordBtn {
-  background-color: #6c5ce7;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 12px;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s;
-}
-
-#recordBtn:hover {
-  background-color: #a29bfe;
-  transform: scale(1.05);
-}
 </style>
 </head>
 <body>
@@ -223,10 +208,6 @@
     transition: all 0.3s ease;
   ">Cancel Upload</button>
    </div>
-   <div class="input-row">
-   <button id="recordBtn" onclick="toggleRecording()">🎙️</button>
-   </div>
-   <audio id="audioPreview" controls style="display:none; width: 100%; margin-top: 10px;"></audio>
   </div>
 <script>
   const socket = io();
@@ -418,99 +399,6 @@ function cancelUpload() {
       progressText.textContent = "";
     }, 1500);
   }
-}
-</script>
-<script>
-let mediaRecorder;
-let recordedChunks = [];
-
-// 🎤 Start/Stop recording
-function toggleRecording() {
-  const recordBtn = document.getElementById("recordBtn");
-
-  if (!mediaRecorder || mediaRecorder.state === "inactive") {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      mediaRecorder = new MediaRecorder(stream);
-      recordedChunks = [];
-
-      mediaRecorder.ondataavailable = event => {
-        if (event.data.size > 0) {
-          recordedChunks.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: "audio/webm" });
-        const file = new File([blob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
-        uploadVoiceMessage(file);
-        document.getElementById("audioPreview").style.display = "none";
-      };
-
-      mediaRecorder.start();
-      recordBtn.textContent = "⏹️";
-    });
-  } else if (mediaRecorder.state === "recording") {
-    mediaRecorder.stop();
-    recordBtn.textContent = "🎙️";
-  }
-}
-
-// 📤 Upload with progress animation
-function uploadVoiceMessage(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const progressBar = document.getElementById("progressBar");
-  const progressContainer = document.getElementById("progressContainer");
-  const progressText = document.getElementById("progressText");
-  const cancelBtn = document.getElementById("cancelUpload");
-
-  progressBar.style.width = "0%";
-  progressContainer.style.display = "block";
-  cancelBtn.style.display = "none";
-  progressText.textContent = "Uploading voice... 0%";
-
-  const xhr = new XMLHttpRequest();
-
-  xhr.upload.onprogress = function (e) {
-    if (e.lengthComputable) {
-      const percent = Math.round((e.loaded / e.total) * 100);
-      progressBar.style.width = percent + "%";
-      progressText.textContent = `Uploading voice... ${percent}%`;
-    }
-  };
-
-  xhr.onload = function () {
-    if (xhr.status === 200) {
-      const data = JSON.parse(xhr.responseText);
-      if (data.url) {
-        socket.emit("message", {
-          username,
-          room,
-          message: `🔊 Voice message: <audio controls src="${data.url}" style="width: 100%; margin-top: 6px;"></audio>`
-        });
-      }
-    } else {
-      progressText.textContent = "Upload failed ❌";
-    }
-
-    setTimeout(() => {
-      progressContainer.style.display = "none";
-      progressBar.style.width = "0%";
-      progressText.textContent = "";
-    }, 1500);
-  };
-
-  xhr.onerror = function () {
-    progressText.textContent = "Upload failed ❌";
-    setTimeout(() => {
-      progressContainer.style.display = "none";
-      progressBar.style.width = "0%";
-    }, 1500);
-  };
-
-  xhr.open("POST", "/upload", true);
-  xhr.send(formData);
 }
 </script>
 </body>
