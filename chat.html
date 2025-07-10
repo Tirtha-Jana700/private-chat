@@ -533,17 +533,25 @@ socket.on("calling", ({ username: caller, mode }) => {
 
   pendingCallMode = mode || "video";
   hasCallModal = true;
-  incomingModal.style.display = "flex";
+
+  const modal = document.getElementById("incomingCallModal");
+  const timeoutText = document.getElementById("callTimeoutText");
+  const callerText = document.getElementById("incomingCaller");
+
+  callerText.textContent = `${caller} is calling you...`;
+  modal.style.display = "flex";
 
   let seconds = 30;
-  callTimeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+  timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+
   callTimeout = setInterval(() => {
     seconds--;
-    callTimeoutText.textContent = `This call will auto-decline in ${seconds}s`;
-    if (seconds === 0) declineIncomingCall();
+    timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+    if (seconds === 0) {
+      declineIncomingCall();
+    }
   }, 1000);
 });
-
 // 📥 Handle WebRTC offer (signaling only)
 socket.on("offer", async ({ offer, caller, mode }) => {
   if (caller === username || inCall) return;
