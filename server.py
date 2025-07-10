@@ -120,7 +120,18 @@ def handle_disconnect():
 # 🔔 Notify other users that someone is calling
 @socketio.on("calling")
 def handle_calling(data):
-    emit("calling", data, room=data["room"], include_self=False)
+    sid = request.sid
+    caller_session = user_sessions.get(sid)
+    if not caller_session:
+        return
+
+    username = caller_session["username"]
+    room = caller_session["room"]
+
+    emit("calling", {
+        "username": username,
+        "mode": data.get("mode", "video")
+    }, room=room, include_self=False)
 
 # 📞 Send WebRTC offer
 @socketio.on("offer")
