@@ -121,12 +121,12 @@ def handle_disconnect():
 @socketio.on("calling")
 def handle_calling(data):
     sid = request.sid
-    caller_session = user_sessions.get(sid)
-    if not caller_session:
+    sender = user_sessions.get(sid)
+    if not sender:
         return
 
-    username = caller_session["username"]
-    room = caller_session["room"]
+    username = sender["username"]
+    room = sender["room"]
 
     emit("calling", {
         "username": username,
