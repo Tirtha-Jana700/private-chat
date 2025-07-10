@@ -503,6 +503,7 @@ function cancelUpload() {
 }
 </script>
 <script>
+let inCall = false; // ✅ prevent duplicate UI when already in call
 const socket = io();
 const peerConnection = new RTCPeerConnection();
 let localStream = null;
@@ -569,54 +570,36 @@ function startCall() {
 
 // 📲 Handle Incoming Offer
 socket.on("offer", async ({ offer, caller, mode }) => {
-  if (caller === username || callUI.style.display === "block") return;
+  if (caller === username || inCall) return;
 
-  pendingCallMode = mode || "video";
-  incomingModal.style.display = "flex";
+  // Only set remote description and answer
+  const constraints = mode === "video"
+    ? { audio: true, video: true }
+    : { audio: true, video: false };
 
-  let seconds = 30;
-  callTimeoutText.textContent = `This call will auto-decline in ${seconds}s`;
-  callTimeout = setInterval(() => {
-    seconds--;
-    callTimeoutText.textContent = `This call will auto-decline in ${seconds}s`;
-    if (seconds === 0) declineIncomingCall();
-  }, 1000);
+  localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-  window.acceptIncomingCall = async function () {
-    clearInterval(callTimeout);
-    incomingModal.style.display = "none";
+  if (mode === "video") {
+    localVideo.srcObject = localStream;
+    localVideo.style.display = "block";
+    remoteVideo.style.display = "block";
+  } else {
+    localVideo.style.display = "none";
+    remoteVideo.style.display = "none";
+  }
 
-    const constraints = pendingCallMode === "video"
-      ? { audio: true, video: true }
-      : { audio: true, video: false };
+  callUI.style.display = "block";
+  inCall = true;
 
-    localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    if (pendingCallMode === "video") {
-      localVideo.srcObject = localStream;
-      localVideo.style.display = "block";
-      remoteVideo.style.display = "block";
-    } else {
-      localVideo.style.display = "none";
-      remoteVideo.style.display = "none";
-    }
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
 
-    callUI.style.display = "block";
-
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    socket.emit("answer", { answer, room });
-    socket.emit("call-accepted", { room });
-  };
-
-  window.declineIncomingCall = function () {
-    clearInterval(callTimeout);
-    incomingModal.style.display = "none";
-    socket.emit("call-declined", { room });
-  };
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  socket.emit("answer", { answer, room });
 });
-
 // ✅ Call Accepted
 socket.on("call-accepted", () => {
   console.log("✅ Call accepted");
@@ -647,10 +630,12 @@ function endCall() {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
   }
+
   remoteVideo.srcObject = null;
   localVideo.srcObject = null;
   callUI.style.display = "none";
   isCaller = false;
+  inCall = false; // ✅ allow new call again
 }
 </script>
 <script>
