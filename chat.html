@@ -508,6 +508,7 @@ const peerConnection = new RTCPeerConnection();
 let localStream = null;
 let callTimeout = null;
 let isCaller = false;
+let isInCall = false;
 let pendingCallMode = "video";
 
 const localVideo = document.getElementById("localVideo");
@@ -521,13 +522,14 @@ function startCall() {
   const mode = document.getElementById("callMode").value;
   pendingCallMode = mode;
   isCaller = true;
+  isInCall = true;
 
   socket.emit("calling", { username, mode, room });
 }
 
 // 📲 Handle Incoming Offer
 socket.on("offer", async ({ offer, caller, mode }) => {
-  if (caller === username) return;
+  if (caller === username || isCaller || isInCall) return; // ✅ Prevent self-trigger or double call
 
   pendingCallMode = mode || "video";
   incomingModal.style.display = "flex";
@@ -540,10 +542,11 @@ socket.on("offer", async ({ offer, caller, mode }) => {
     if (seconds === 0) declineIncomingCall();
   }, 1000);
 
-  // Accept
+  // ✅ Accept Call
   window.acceptIncomingCall = async function () {
     clearInterval(callTimeout);
     incomingModal.style.display = "none";
+    isInCall = true;
 
     const constraints = pendingCallMode === "video"
       ? { audio: true, video: true }
@@ -569,7 +572,7 @@ socket.on("offer", async ({ offer, caller, mode }) => {
     socket.emit("call-accepted", { room });
   };
 
-  // Decline
+  // ❌ Decline Call
   window.declineIncomingCall = function () {
     clearInterval(callTimeout);
     incomingModal.style.display = "none";
@@ -577,12 +580,12 @@ socket.on("offer", async ({ offer, caller, mode }) => {
   };
 });
 
-// ✅ Accept Feedback
+// ✅ Accepted Feedback
 socket.on("call-accepted", () => {
   console.log("✅ Call accepted");
 });
 
-// ❌ Declined
+// ❌ Declined Feedback
 socket.on("call-declined", () => {
   alert("❌ Call was declined");
   endCall();
@@ -600,7 +603,7 @@ socket.on("ice-candidate", ({ candidate }) => {
   }
 });
 
-// 🔁 ICE & Offer when I call
+// 🔁 Handle ICE + Offer when I call
 socket.on("calling", async ({ username: targetUser, mode }) => {
   if (targetUser === username) return;
 
@@ -648,6 +651,7 @@ function endCall() {
   localVideo.srcObject = null;
   callUI.style.display = "none";
   isCaller = false;
+  isInCall = false;
 }
 </script>
 <script>
