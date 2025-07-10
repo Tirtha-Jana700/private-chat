@@ -208,13 +208,39 @@
     transition: all 0.3s ease;
   ">Cancel Upload</button>
    </div>
-   <!-- 🎥 Call UI Interface -->
-   <div id="callUI" style="display:none; margin-top: 20px; text-align: center;">
-     <video id="remoteVideo" autoplay playsinline style="width: 100%; max-width: 100%; border-radius: 20px; box-shadow: 0 0 20px #4caf50;"></video>
-     <video id="localVideo" autoplay playsinline muted style="width: 160px; height: 120px; position: absolute; bottom: 20px; right: 20px; border-radius: 12px; border: 2px solid white; box-shadow: 0 0 10px #ccc;"></video>
+   <!-- 📹 Video & Audio Call UI -->
+   <div id="callUI" style="display: none; margin-top: 10px; text-align: center; position: relative;">
+     <video id="remoteVideo" autoplay playsinline style="
+       width: 100%;
+       max-width: 100%;
+       height: 250px;
+       object-fit: cover;
+       border-radius: 14px;
+       box-shadow: 0 0 18px #4caf50;
+     "></video>
 
-     <div style="margin-top: 10px;">
-       <button onclick="endCall()" style="background: red; color: white; padding: 10px 20px; border-radius: 10px; border: none; font-weight: bold;">
+     <!-- Floating local video -->
+     <video id="localVideo" autoplay playsinline muted style="
+       width: 120px;
+       height: 90px;
+       position: absolute;
+       bottom: 20px;
+       right: 20px;
+       border-radius: 10px;
+       border: 2px solid white;
+       box-shadow: 0 0 10px #ccc;
+       display: none;
+     "></video>
+
+     <div style="margin-top: 12px;">
+       <button onclick="endCall()" style="
+         background: red;
+         color: white;
+         padding: 10px 20px;
+         border-radius: 10px;
+         border: none;
+         font-weight: bold;
+       ">
          <i class="fas fa-phone-slash"></i> End Call
        </button>
      </div>
@@ -229,6 +255,59 @@
      <button onclick="startCall()" style="margin-left: 10px; padding: 8px 16px; border-radius: 10px; background-color: #4caf50; color: white; border: none;">
        <i class="fas fa-phone"></i> Start Call
      </button>
+   </div>
+
+   <!-- 📞 Incoming Call Modal -->
+   <div id="incomingCallModal" style="
+     display: none;
+     position: fixed;
+     inset: 0;
+     backdrop-filter: blur(8px);
+     background: rgba(0, 0, 0, 0.4);
+     z-index: 999;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+   ">
+     <div style="
+       background: rgba(255, 255, 255, 0.1);
+       border: 2px solid rgba(255, 255, 255, 0.2);
+       padding: 2rem;
+       border-radius: 16px;
+       box-shadow: 0 0 20px #4caf50;
+       backdrop-filter: blur(20px);
+       text-align: center;
+       color: white;
+       width: 90%;
+       max-width: 350px;
+     ">
+       <h2 id="incomingCaller" style="margin-bottom: 1rem;">Incoming Call...</h2>
+       <div style="display: flex; justify-content: space-around;">
+         <button onclick="acceptIncomingCall()" style="
+           background-color: #4caf50;
+           color: white;
+           padding: 10px 20px;
+           border: none;
+           border-radius: 12px;
+           font-size: 1rem;
+           cursor: pointer;
+         ">
+           <i class="fas fa-phone"></i> Accept
+         </button>
+         <button onclick="declineIncomingCall()" style="
+           background-color: #f44336;
+           color: white;
+           padding: 10px 20px;
+           border: none;
+           border-radius: 12px;
+           font-size: 1rem;
+           cursor: pointer;
+         ">
+           <i class="fas fa-phone-slash"></i> Reject
+         </button>
+       </div>
+       <p id="callTimeoutText" style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;"></p>
+     </div>
    </div>
   </div>
 <script>
@@ -424,86 +503,157 @@ function cancelUpload() {
 }
 </script>
 <script>
-  const peerConnection = new RTCPeerConnection();
-  let localStream = null;
+const peerConnection = new RTCPeerConnection();
+let localStream = null;
 
-  const localVideo = document.getElementById("localVideo");
-  const remoteVideo = document.getElementById("remoteVideo");
-  const callUI = document.getElementById("callUI");
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const callUI = document.getElementById("callUI");
 
-  async function startCall() {
-    const mode = document.getElementById("callMode").value;
+async function startCall() {
+  const mode = document.getElementById("callMode").value;
+  const constraints = mode === "video"
+    ? { audio: true, video: true }
+    : { audio: true, video: false };
 
-    const constraints = mode === "video"
-      ? { audio: true, video: true }
-      : { audio: true, video: false };
-
-    localStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-    if (mode === "video") {
-      localVideo.srcObject = localStream;
-    }
-
-    beginCall(localStream);
+  // Stop old stream if exists
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
   }
 
-  function beginCall(stream) {
-    callUI.style.display = "block";
+  localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-    stream.getTracks().forEach(track => {
-      peerConnection.addTrack(track, stream);
-    });
-
-    peerConnection.ontrack = (event) => {
-      remoteVideo.srcObject = event.streams[0];
-    };
-
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", { candidate: event.candidate, room });
-      }
-    };
-
-    peerConnection.createOffer()
-      .then(offer => peerConnection.setLocalDescription(offer))
-      .then(() => {
-        socket.emit("offer", { offer: peerConnection.localDescription, room });
-      });
-  }
-
-  function endCall() {
-    peerConnection.getSenders().forEach(sender => peerConnection.removeTrack(sender));
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    callUI.style.display = "none";
-  }
-
-  // Handle Offer
-  socket.on("offer", async ({ offer }) => {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  if (mode === "video") {
     localVideo.srcObject = localStream;
-    callUI.style.display = "block";
+    localVideo.style.display = "block";
+  } else {
+    localVideo.style.display = "none";
+  }
 
-    localStream.getTracks().forEach(track => {
-      peerConnection.addTrack(track, localStream);
+  beginCall(localStream);
+}
+
+function beginCall(stream) {
+  callUI.style.display = "block";
+
+  stream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, stream);
+  });
+
+  peerConnection.ontrack = (event) => {
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", { candidate: event.candidate, room });
+    }
+  };
+
+  peerConnection.createOffer()
+    .then(offer => peerConnection.setLocalDescription(offer))
+    .then(() => {
+      socket.emit("offer", { offer: peerConnection.localDescription, room });
     });
+}
 
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    socket.emit("answer", { answer, room });
+function endCall() {
+  peerConnection.getSenders().forEach(sender => peerConnection.removeTrack(sender));
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  remoteVideo.srcObject = null;
+  localVideo.srcObject = null;
+  localVideo.style.display = "none";
+  callUI.style.display = "none";
+}
+
+// Handle Offer
+socket.on("offer", async ({ offer }) => {
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  localVideo.srcObject = localStream;
+  localVideo.style.display = "block";
+  callUI.style.display = "block";
+
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
   });
 
-  // Handle Answer
-  socket.on("answer", ({ answer }) => {
-    peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-  });
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  socket.emit("answer", { answer, room });
+});
 
-  // Handle ICE Candidate
-  socket.on("ice-candidate", ({ candidate }) => {
+// Handle Answer
+socket.on("answer", ({ answer }) => {
+  peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+// Handle ICE Candidate
+socket.on("ice-candidate", ({ candidate }) => {
+  if (candidate) {
     peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-  });
+  }
+});
+let callTimeout; // to clear on accept/reject
+let isCaller = false; // true if you're the one initiating the call
+
+// --- Call a user ---
+function startCall(mode = "video") {
+  isCaller = true;
+  socket.emit("calling", { from: username, room, mode });
+  initiateCall(mode);
+}
+
+// --- When someone is calling you ---
+socket.on("calling", ({ from, mode }) => {
+  if (isCaller) return; // skip if you're the caller
+
+  document.getElementById("incomingCaller").textContent = `${from} is calling you...`;
+  document.getElementById("incomingCallModal").style.display = "flex";
+
+  // Start 30-second timeout
+  let seconds = 30;
+  const timeoutText = document.getElementById("callTimeoutText");
+  timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+  callTimeout = setInterval(() => {
+    seconds--;
+    timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+    if (seconds === 0) {
+      declineIncomingCall();
+    }
+  }, 1000);
+});
+
+// --- Accept Call ---
+function acceptIncomingCall() {
+  clearInterval(callTimeout);
+  document.getElementById("incomingCallModal").style.display = "none";
+  socket.emit("call-accepted", { room });
+  initiateCall("video"); // or "audio" based on received mode (optional)
+}
+
+// --- Decline Call ---
+function declineIncomingCall() {
+  clearInterval(callTimeout);
+  document.getElementById("incomingCallModal").style.display = "none";
+  socket.emit("call-declined", { room });
+}
+
+// --- Listen for rejection or acceptance ---
+socket.on("call-declined", () => {
+  alert("❌ Call was declined");
+  endCall(); // optional cleanup
+});
+
+socket.on("call-accepted", () => {
+  console.log("✅ Call accepted");
+  // No need to do anything here unless you want a confirmation UI
+});
 </script>
 <script>
   // Show default browser alert on refresh or tab close
