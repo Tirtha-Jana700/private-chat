@@ -150,6 +150,57 @@
   opacity: 0.85;
 }
 </style>
+<style>
+/* 🧊 Blur + Glow Modal Backdrop */
+#refreshModalOverlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* 🌟 Glowing Modal Container */
+#refreshModal {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 20px #00ffb3, 0 0 30px rgba(0, 255, 128, 0.5);
+  text-align: center;
+  color: white;
+  max-width: 320px;
+  width: 90%;
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* 💫 Button Style */
+#refreshModal button {
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(to right, #00ffb3, #00ffaa);
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.4s ease;
+}
+#refreshModal button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(to right, #00ffaa, #00ffcc);
+}
+
+/* 🌀 Fade Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+</style>
 </head>
 <body>
   <div class="chat-container">
@@ -207,6 +258,27 @@
     box-shadow: 0 0 12px rgba(255, 120, 180, 0.4);
     transition: all 0.3s ease;
   ">Cancel Upload</button>
+   </div>
+
+   <!-- 📹 Call Controls -->
+   <div id="call-controls" style="margin-top: 14px; display: flex; justify-content: center; gap: 12px;">
+     <button onclick="startCall()" title="Start Call"><i class="fas fa-phone"></i></button>
+     <button onclick="endCall()" id="endCallBtn" style="display: none;" title="End Call"><i class="fas fa-phone-slash"></i></button>
+   </div>
+
+   <!-- 🎥 Video Area (optional, hidden until call starts) -->
+   <div id="videoArea" style="display: none; margin-top: 1rem; text-align: center;">
+     <video id="localVideo" autoplay muted playsinline style="width: 45%; border-radius: 10px;"></video>
+     <video id="remoteVideo" autoplay playsinline style="width: 45%; border-radius: 10px;"></video>
+   </div>
+
+   <div id="refreshModalOverlay" style="display:none;">
+     <div id="refreshModal">
+       <h3>🔄 Are you sure you want to refresh?</h3>
+       <p>This will end your current call or chat session.</p>
+       <button onclick="proceedRefresh()">Refresh</button>
+       <button onclick="cancelRefresh()">Cancel</button>
+     </div>
    </div>
   </div>
 <script>
@@ -399,6 +471,130 @@ function cancelUpload() {
       progressText.textContent = "";
     }, 1500);
   }
+}
+</script>
+<script>
+let peerConnection;
+const config = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+};
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+
+function startCall() {
+  socket.emit("calling", { username, room });
+
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+      localVideo.srcObject = stream;
+      document.getElementById("videoArea").style.display = "block";
+      document.getElementById("endCallBtn").style.display = "inline-block";
+
+      peerConnection = new RTCPeerConnection(config);
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+      peerConnection.ontrack = event => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      peerConnection.onicecandidate = e => {
+        if (e.candidate) {
+          socket.emit("ice-candidate", { room, candidate: e.candidate });
+        }
+      };
+
+      peerConnection.createOffer().then(offer => {
+        return peerConnection.setLocalDescription(offer);
+      }).then(() => {
+        socket.emit("offer", { room, offer: peerConnection.localDescription });
+      });
+    });
+}
+
+socket.on("calling", (data) => {
+  if (data.username !== username) {
+    const accept = confirm(`${data.username} is calling. Answer?`);
+    if (accept) {
+      answerCall();
+    }
+  }
+});
+
+function answerCall() {
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+      localVideo.srcObject = stream;
+      document.getElementById("videoArea").style.display = "block";
+      document.getElementById("endCallBtn").style.display = "inline-block";
+
+      peerConnection = new RTCPeerConnection(config);
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+      peerConnection.ontrack = event => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      peerConnection.onicecandidate = e => {
+        if (e.candidate) {
+          socket.emit("ice-candidate", { room, candidate: e.candidate });
+        }
+      };
+    });
+}
+
+socket.on("offer", (data) => {
+  if (!peerConnection) answerCall();
+  peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
+    .then(() => {
+      return peerConnection.createAnswer();
+    }).then(answer => {
+      return peerConnection.setLocalDescription(answer);
+    }).then(() => {
+      socket.emit("answer", { room, answer: peerConnection.localDescription });
+    });
+});
+
+socket.on("answer", (data) => {
+  peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+});
+
+socket.on("ice-candidate", (data) => {
+  if (peerConnection && data.candidate) {
+    peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+  }
+});
+
+function endCall() {
+  if (peerConnection) {
+    peerConnection.getSenders().forEach(sender => sender.track.stop());
+    peerConnection.close();
+    peerConnection = null;
+  }
+  localVideo.srcObject = null;
+  remoteVideo.srcObject = null;
+  document.getElementById("videoArea").style.display = "none";
+  document.getElementById("endCallBtn").style.display = "none";
+}
+</script>
+<script>
+let isReloading = false;
+
+window.addEventListener("beforeunload", function (e) {
+  if (!isReloading) {
+    e.preventDefault();
+    document.getElementById("refreshModalOverlay").style.display = "flex";
+    return ""; // show warning in some browsers
+  }
+});
+
+function proceedRefresh() {
+  isReloading = true;
+  document.getElementById("refreshModalOverlay").style.display = "none";
+  location.reload(); // or use: window.location.href = window.location.href;
+}
+
+function cancelRefresh() {
+  document.getElementById("refreshModalOverlay").style.display = "none";
 }
 </script>
 </body>

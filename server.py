@@ -117,6 +117,26 @@ def handle_disconnect():
         last_disconnect[user["username"]] = time.time()
         del user_sessions[sid]
 
+# 🔔 Notify other users that someone is calling
+@socketio.on("calling")
+def handle_calling(data):
+    emit("calling", data, room=data["room"], include_self=False)
+
+# 📞 Send WebRTC offer
+@socketio.on("offer")
+def handle_offer(data):
+    emit("offer", data, room=data["room"], include_self=False)
+
+# 📞 Send WebRTC answer
+@socketio.on("answer")
+def handle_answer(data):
+    emit("answer", data, room=data["room"], include_self=False)
+
+# 🌐 Exchange ICE candidates
+@socketio.on("ice-candidate")
+def handle_ice(data):
+    emit("ice-candidate", data, room=data["room"], include_self=False)
+
 # --- Run App ---
 if __name__ == "__main__":
     import eventlet
