@@ -505,24 +505,75 @@ function cancelUpload() {
 <script>
 const peerConnection = new RTCPeerConnection();
 let localStream = null;
+let callTimeout = null;
+let pendingCallMode = "video"; // default fallback
 
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 const callUI = document.getElementById("callUI");
 
-async function startCall() {
+// 🔔 Handle incoming call request
+socket.on("calling", ({ username: caller, mode }) => {
+  pendingCallMode = mode || "video";
+  const modal = document.getElementById("incomingCallModal");
+  const timeoutText = document.getElementById("callTimeoutText");
+  const callerText = document.getElementById("incomingCaller");
+
+  callerText.textContent = `${caller} is calling you...`;
+  modal.style.display = "flex";
+
+  let seconds = 30;
+  timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+
+  callTimeout = setInterval(() => {
+    seconds--;
+    timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
+    if (seconds === 0) {
+      declineIncomingCall();
+    }
+  }, 1000);
+});
+
+// ✅ Accept call
+function acceptIncomingCall() {
+  clearInterval(callTimeout);
+  document.getElementById("incomingCallModal").style.display = "none";
+  socket.emit("call-accepted", { room });
+  initiateCall(pendingCallMode);
+}
+
+// ❌ Decline call
+function declineIncomingCall() {
+  clearInterval(callTimeout);
+  document.getElementById("incomingCallModal").style.display = "none";
+  socket.emit("call-declined", { room });
+}
+
+// 🔁 Listen for response
+socket.on("call-declined", () => {
+  alert("❌ Call was declined");
+  endCall();
+});
+
+socket.on("call-accepted", () => {
+  console.log("✅ Call accepted");
+  // Optionally show a message
+});
+
+// 🎥 Start outgoing call (triggered by you)
+function startCall() {
   const mode = document.getElementById("callMode").value;
+  pendingCallMode = mode;
+  socket.emit("calling", { username, mode, room });
+}
+
+// 📞 Begin call after accepted
+async function initiateCall(mode) {
   const constraints = mode === "video"
     ? { audio: true, video: true }
     : { audio: true, video: false };
 
-  // Stop old stream if exists
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-  }
-
   localStream = await navigator.mediaDevices.getUserMedia(constraints);
-
   if (mode === "video") {
     localVideo.srcObject = localStream;
     localVideo.style.display = "block";
@@ -530,14 +581,10 @@ async function startCall() {
     localVideo.style.display = "none";
   }
 
-  beginCall(localStream);
-}
-
-function beginCall(stream) {
   callUI.style.display = "block";
 
-  stream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, stream);
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
   });
 
   peerConnection.ontrack = (event) => {
@@ -550,16 +597,14 @@ function beginCall(stream) {
     }
   };
 
-  peerConnection.createOffer()
-    .then(offer => peerConnection.setLocalDescription(offer))
-    .then(() => {
-      socket.emit("offer", { offer: peerConnection.localDescription, room });
-    });
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+  socket.emit("offer", { offer, room });
 }
 
+// 📴 End call
 function endCall() {
   peerConnection.getSenders().forEach(sender => peerConnection.removeTrack(sender));
-
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
@@ -571,16 +616,21 @@ function endCall() {
   callUI.style.display = "none";
 }
 
-// Handle Offer
+// 🔁 WebRTC Signaling
 socket.on("offer", async ({ offer }) => {
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-  localVideo.srcObject = localStream;
-  localVideo.style.display = "block";
-  callUI.style.display = "block";
+  const mode = pendingCallMode;
+  const constraints = mode === "video"
+    ? { audio: true, video: true }
+    : { audio: true, video: false };
 
-  localStream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, localStream);
-  });
+  localStream = await navigator.mediaDevices.getUserMedia(constraints);
+  if (mode === "video") {
+    localVideo.srcObject = localStream;
+    localVideo.style.display = "block";
+  }
+
+  callUI.style.display = "block";
+  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
   await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
   const answer = await peerConnection.createAnswer();
@@ -588,71 +638,14 @@ socket.on("offer", async ({ offer }) => {
   socket.emit("answer", { answer, room });
 });
 
-// Handle Answer
 socket.on("answer", ({ answer }) => {
   peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 });
 
-// Handle ICE Candidate
 socket.on("ice-candidate", ({ candidate }) => {
   if (candidate) {
     peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
   }
-});
-let callTimeout; // to clear on accept/reject
-let isCaller = false; // true if you're the one initiating the call
-
-// --- Call a user ---
-function startCall(mode = "video") {
-  isCaller = true;
-  socket.emit("calling", { from: username, room, mode });
-  initiateCall(mode);
-}
-
-// --- When someone is calling you ---
-socket.on("calling", ({ from, mode }) => {
-  if (isCaller) return; // skip if you're the caller
-
-  document.getElementById("incomingCaller").textContent = `${from} is calling you...`;
-  document.getElementById("incomingCallModal").style.display = "flex";
-
-  // Start 30-second timeout
-  let seconds = 30;
-  const timeoutText = document.getElementById("callTimeoutText");
-  timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
-  callTimeout = setInterval(() => {
-    seconds--;
-    timeoutText.textContent = `This call will auto-decline in ${seconds}s`;
-    if (seconds === 0) {
-      declineIncomingCall();
-    }
-  }, 1000);
-});
-
-// --- Accept Call ---
-function acceptIncomingCall() {
-  clearInterval(callTimeout);
-  document.getElementById("incomingCallModal").style.display = "none";
-  socket.emit("call-accepted", { room });
-  initiateCall("video"); // or "audio" based on received mode (optional)
-}
-
-// --- Decline Call ---
-function declineIncomingCall() {
-  clearInterval(callTimeout);
-  document.getElementById("incomingCallModal").style.display = "none";
-  socket.emit("call-declined", { room });
-}
-
-// --- Listen for rejection or acceptance ---
-socket.on("call-declined", () => {
-  alert("❌ Call was declined");
-  endCall(); // optional cleanup
-});
-
-socket.on("call-accepted", () => {
-  console.log("✅ Call accepted");
-  // No need to do anything here unless you want a confirmation UI
 });
 </script>
 <script>
@@ -664,5 +657,6 @@ socket.on("call-accepted", () => {
 </script>
 </body>
 </html>
+
 
 
