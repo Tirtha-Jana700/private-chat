@@ -508,7 +508,6 @@ const peerConnection = new RTCPeerConnection();
 let localStream = null;
 let callTimeout = null;
 let isCaller = false;
-let isInCall = false;
 let pendingCallMode = "video";
 
 const localVideo = document.getElementById("localVideo");
@@ -522,14 +521,14 @@ function startCall() {
   const mode = document.getElementById("callMode").value;
   pendingCallMode = mode;
   isCaller = true;
-  isInCall = true;
 
   socket.emit("calling", { username, mode, room });
 }
 
 // 📲 Handle Incoming Offer
 socket.on("offer", async ({ offer, caller, mode }) => {
-  if (caller === username || isCaller || isInCall) return; // ✅ Prevent self-trigger or double call
+  // ✅ Prevent call popup from showing on self refresh or if already in call
+  if (caller === username || callUI.style.display === "block") return;
 
   pendingCallMode = mode || "video";
   incomingModal.style.display = "flex";
@@ -542,11 +541,10 @@ socket.on("offer", async ({ offer, caller, mode }) => {
     if (seconds === 0) declineIncomingCall();
   }, 1000);
 
-  // ✅ Accept Call
+  // ✅ Accept
   window.acceptIncomingCall = async function () {
     clearInterval(callTimeout);
     incomingModal.style.display = "none";
-    isInCall = true;
 
     const constraints = pendingCallMode === "video"
       ? { audio: true, video: true }
@@ -572,7 +570,7 @@ socket.on("offer", async ({ offer, caller, mode }) => {
     socket.emit("call-accepted", { room });
   };
 
-  // ❌ Decline Call
+  // ❌ Decline
   window.declineIncomingCall = function () {
     clearInterval(callTimeout);
     incomingModal.style.display = "none";
@@ -580,30 +578,30 @@ socket.on("offer", async ({ offer, caller, mode }) => {
   };
 });
 
-// ✅ Accepted Feedback
+// ✅ Call Accepted
 socket.on("call-accepted", () => {
   console.log("✅ Call accepted");
 });
 
-// ❌ Declined Feedback
+// ❌ Call Declined
 socket.on("call-declined", () => {
   alert("❌ Call was declined");
   endCall();
 });
 
-// 📥 Answer Handling
+// 📥 Handle Answer
 socket.on("answer", ({ answer }) => {
   peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 });
 
-// ❄️ ICE
+// ❄️ ICE Candidate Handling
 socket.on("ice-candidate", ({ candidate }) => {
   if (candidate) {
     peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
   }
 });
 
-// 🔁 Handle ICE + Offer when I call
+// 📞 Handle "calling" event to initiate offer (I am the caller)
 socket.on("calling", async ({ username: targetUser, mode }) => {
   if (targetUser === username) return;
 
@@ -640,18 +638,18 @@ socket.on("calling", async ({ username: targetUser, mode }) => {
   socket.emit("offer", { offer, room, caller: username, mode });
 });
 
-// 🔚 End Call
+// 📴 End Call
 function endCall() {
   peerConnection.getSenders().forEach(sender => peerConnection.removeTrack(sender));
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
   }
+
   remoteVideo.srcObject = null;
   localVideo.srcObject = null;
   callUI.style.display = "none";
   isCaller = false;
-  isInCall = false;
 }
 </script>
 <script>
