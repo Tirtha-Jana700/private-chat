@@ -1,4 +1,3 @@
-
 import eventlet
 eventlet.monkey_patch()
 
@@ -119,37 +118,33 @@ def handle_disconnect():
         }, room=user["room"])
         last_disconnect[user["username"]] = time.time()
         del user_sessions[sid]
+
+# Handle incoming call request
+@socketio.on("calling")
+def handle_calling(data):
+    sid = request.sid
+    user = user_sessions.get(sid)
+    if not user:
+        return
+
+    data["caller"] = user["username"]
+    room = user["room"]
+    emit("calling", data, room=room, include_self=False)
+
+# Handle WebRTC offer
 @socketio.on("offer")
 def handle_offer(data):
-    emit("offer", {
-        "offer": data["offer"],
-        "username": data["username"],
-        "video": data["video"]
-    }, room=data["room"], include_self=False)
+    emit("offer", data, room=data["room"], include_self=False)
 
+# Handle WebRTC answer
 @socketio.on("answer")
 def handle_answer(data):
-    emit("answer", {
-        "answer": data["answer"]
-    }, room=data["room"], include_self=False)
+    emit("answer", data, room=data["room"], include_self=False)
 
+# Handle ICE candidates
 @socketio.on("ice-candidate")
 def handle_ice_candidate(data):
-    emit("ice-candidate", {
-        "candidate": data["candidate"]
-    }, room=data["room"], include_self=False)
-
-@socketio.on("reject-call")
-def handle_reject(data):
-    emit("message", {
-        "username": "System",
-        "message": "❌ Call was rejected."
-    }, room=data["room"])
-@socketio.on("call-ended")
-def handle_call_end(data):
-    emit("call-ended", {
-        "username": data["username"]
-    }, room=data["room"], include_self=False)
+    emit("ice-candidate", data, room=data["room"], include_self=False)
 # --- Run App ---
 if __name__ == "__main__":
     import eventlet
