@@ -512,7 +512,20 @@ function acceptCall() {
 
 function rejectCall() {
   document.getElementById("incomingCall").style.display = "none";
-  socket.emit("reject-call", { room });
+
+  // 🔴 Emit a signal to inform the caller
+  socket.emit("reject-call", { username, room });
+
+  // 🔴 Just in case we received a stream briefly
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
 }
 
 socket.on("answer", ({ answer }) => {
@@ -577,6 +590,29 @@ socket.on("call-ended", ({ username }) => {
     username: "System",
     room,
     message: `📴 Call ended by ${username}`
+  });
+});
+
+socket.on("call-rejected", ({ username }) => {
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  document.getElementById("remoteVideo").srcObject = null;
+  document.getElementById("localVideo").srcObject = null;
+  document.getElementById("videoArea").style.display = "none";
+  document.getElementById("callControls").style.display = "none";
+
+  socket.emit("message", {
+    username: "System",
+    room,
+    message: `❌ Call was rejected by ${username}`
   });
 });
 </script>

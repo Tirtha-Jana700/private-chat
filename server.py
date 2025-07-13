@@ -150,6 +150,11 @@ def handle_call_end(data):
     emit("call-ended", {
         "username": data["username"]
     }, room=data["room"], include_self=False)
+@socketio.on("reject-call")
+def handle_reject_call(data):
+    emit("call-rejected", {
+        "username": data["username"]
+    }, room=data["room"], include_self=False)
 # --- Run App ---
 if __name__ == "__main__":
     import eventlet
