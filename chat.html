@@ -448,6 +448,7 @@ function startCall(video) {
   isVideoCall = video;
   document.getElementById("videoArea").style.display = video ? "block" : "none";
   document.getElementById("callControls").style.display = "flex";
+  document.getElementById("camIcon").parentElement.style.display = video ? "inline-block" : "none";
 
   navigator.mediaDevices.getUserMedia({ audio: true, video: video }).then(stream => {
     localStream = stream;
@@ -470,15 +471,17 @@ function startCall(video) {
 
 socket.on("offer", ({ offer, username: caller, video }) => {
   isVideoCall = video;
-  document.getElementById("videoArea").style.display = video ? "block" : "none";
-  document.getElementById("callControls").style.display = "flex";
+  window.pendingOffer = offer;
+  window.caller = caller;
+
+  // Only show the popup — don’t show video area or controls yet
   document.getElementById("callerInfo").textContent = `${caller} is calling...`;
   document.getElementById("incomingCall").style.display = "block";
-  window.pendingOffer = offer;
 });
 
 function acceptCall() {
   document.getElementById("incomingCall").style.display = "none";
+
   navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall }).then(stream => {
     localStream = stream;
     document.getElementById("localVideo").srcObject = stream;
@@ -490,12 +493,20 @@ function acceptCall() {
     peerConnection.ontrack = e => {
       document.getElementById("remoteVideo").srcObject = e.streams[0];
     };
+
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
     peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
     peerConnection.createAnswer().then(answer => {
       peerConnection.setLocalDescription(answer);
       socket.emit("answer", { answer, room });
     });
+
+    // ✅ Show call UI only after accepting
+    document.getElementById("videoArea").style.display = isVideoCall ? "block" : "none";
+    document.getElementById("callControls").style.display = "flex";
+
+    // ✅ Show/hide camera toggle
+    document.getElementById("camIcon").parentElement.style.display = isVideoCall ? "inline-block" : "none";
   });
 }
 
