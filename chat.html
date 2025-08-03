@@ -155,10 +155,14 @@
   <div class="chat-container">
     <div class="top-bar">
       <h2>🌸 Welcome to My Private Chat</h2>
-      <div id="onlineInfo" style="margin-bottom: 10px; text-align: left;">
-        <strong>🟢 Online (<span id="onlineCount">0</span>):</strong>
-        <ul id="userList" style="margin: 4px 0 0 16px; padding-left: 0;"></ul>
-      </div>
+      <!-- 👥 Online Info -->
+      <div id="onlineInfo" style="margin: 10px 0;">
+        <strong>🟢 Online: <span id="onlineCount">0</span></strong>
+        <details style="margin-top: 6px;">
+          <summary style="cursor: pointer; color: #ccc; font-size: 0.95rem;">Show Online Users</summary>
+          <ul id="userList" style="margin-left: 18px; margin-top: 6px;"></ul>
+        </details>
+      </div>>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </div>
     <div id="messages"></div>
