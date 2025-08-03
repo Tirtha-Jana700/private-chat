@@ -154,6 +154,10 @@
 <body>
   <div class="chat-container">
     <div class="top-bar">
+     <div id="onlineInfo" style="margin-bottom: 10px; text-align: left;">
+       <strong>🟢 Online (<span id="onlineCount">0</span>):</strong>
+       <ul id="userList" style="margin: 4px 0 0 16px; padding-left: 0;"></ul>
+</div>
       <h2>🌸 Welcome to My Private Chat</h2>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </div>
@@ -254,6 +258,25 @@
 
   // 👥 Join the room
   socket.emit("join", { username, room });
+ // 🟢 Update online user list and count
+ socket.on("update_user_list",(data) => {
+   const userList = document.getElementById("userList");
+   const onlineCount = document.getElementById("onlineCount");
+
+   userList.innerHTML = "";
+   data.users.forEach(user => {
+     const li = document.createElement("li");
+     li.textContent = user;
+     userList.appendChild(li);
+   });
+
+   onlineCount.textContent = data.count;
+ });
+
+ // 🧼 Leave room on close
+ window.addEventListener("beforeunload", () => {
+   socket.emit("leave", { username, room });
+ });
 
   // 💬 Handle incoming messages (with URL formatting)
   socket.on("message", data => {
