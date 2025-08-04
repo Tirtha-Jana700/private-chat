@@ -18,39 +18,6 @@
       --button-bg: #6c5ce7;
       --button-hover: #a29bfe;
     }
-    
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'Raleway', sans-serif;
-      background: var(--day-bg) center/cover no-repeat fixed;
-      color: var(--text-color);
-      display: block; /* 🔁 Changed from flex to block */
-      overflow-x: hidden;
-      transition: background 0.8s ease;
-    }
-
-    body.dark-mode {
-      background: var(--night-bg) center/cover no-repeat fixed;
-    }
-
-    .chat-container {
-      backdrop-filter: blur(15px);
-      background-color: var(--glass);
-      border: 2px solid var(--border);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      width: 100%;
-      max-width: 600px;
-      height: 100vh;              /* ✅ Full screen height */
-      overflow-y: auto;           /* ✅ Allow scrolling */
-      padding: 1.5rem;
-      text-align: center;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-    }
 
     #messages {
       height: 300px;
@@ -136,6 +103,44 @@
       transform: rotate(360deg);
     }
   </style>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Raleway', sans-serif;
+  background: var(--day-bg) center/cover no-repeat fixed;
+  color: var(--text-color);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden;
+  transition: background 0.8s ease;
+}
+
+body.dark-mode {
+  background: var(--night-bg) center/cover no-repeat fixed !important;
+}
+
+.chat-container {
+  backdrop-filter: blur(15px);
+  background-color: var(--glass);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 600px;
+  margin-top: 20px;
+  padding: 1.5rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+#videoArea {
+  max-height: 40vh;
+  overflow: hidden;
+}
+</style>
 <style>
 @keyframes gradientAnimation {
   0% { background-position: 0% 50%; }
