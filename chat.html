@@ -26,10 +26,8 @@
       font-family: 'Raleway', sans-serif;
       background: var(--day-bg) center/cover no-repeat fixed;
       color: var(--text-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow-x: hidden; /* ✅ Prevent horizontal scroll */
+      display: block; /* 🔁 Changed from flex to block */
+      overflow-x: hidden;
       transition: background 0.8s ease;
     }
 
@@ -43,12 +41,17 @@
       border: 2px solid var(--border);
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      width: 100%; /* ✅ Full width for small screens */
-      max-width: 600px; /* ✅ Still limit it nicely on large screens */
+      width: 100%;
+      max-width: 600px;
+      height: 100vh;              /* ✅ Full screen height */
+      overflow-y: auto;           /* ✅ Allow scrolling */
       padding: 1.5rem;
       text-align: center;
-      box-sizing: border-box; /* ✅ Important for padding consistency */
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
     }
+
     #messages {
       height: 300px;
       overflow-y: auto;
@@ -153,7 +156,7 @@
 </head>
 <body>
   <div class="chat-container">
-    <div class="top-bar" style="position: sticky; top: 0; background: rgba(0,0,0,0.3); z-index: 999;">
+    <div class="top-bar">
       <h2>🌸 Welcome to My Private Chat</h2>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </div>
