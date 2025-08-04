@@ -118,6 +118,10 @@ html, body {
   transition: background 0.8s ease;
 }
 
+html.dark-mode, body.dark-mode {
+  background: var(--night-bg) center/cover no-repeat fixed !important;
+}
+
 body.dark-mode {
   background: var(--night-bg) center/cover no-repeat fixed !important;
 }
@@ -134,6 +138,12 @@ body.dark-mode {
   padding: 1.5rem;
   text-align: center;
   box-sizing: border-box;
+}
+
+body.dark-mode .chat-container,
+html.dark-mode .chat-container {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 #videoArea {
@@ -376,11 +386,12 @@ body.dark-mode {
   }
 
   // 🌗 Toggle day/night mode
-  function toggleTheme() {
-    const body = document.body;
-    const icon = document.getElementById("theme-icon");
-    body.classList.toggle("dark-mode");
-    icon.textContent = body.classList.contains("dark-mode") ? "☀️" : "🌙";
+   function toggleTheme(){
+    document.body.classList.toggle("dark-mode");
+   document.documentElement.classList.toggle("dark-mode"); // 🔥 adds dark mode to <html> too
+
+      const icon =    document.getElementById("theme-icon");
+      icon.textContent = document.body.classList.contains("dark-mode") ? "🌞" : "🌙";
   }
 </script>
 <script>
