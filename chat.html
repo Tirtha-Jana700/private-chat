@@ -150,6 +150,17 @@ html.dark-mode .chat-container {
   max-height: 40vh;
   overflow: hidden;
 }
+
+body {
+  user-select: none;
+}
+
+.shared-link {
+  user-select: text !important;
+  color: #4dd0e1;
+  word-break: break-word;
+  cursor: pointer;
+}
 </style>
 <style>
 @keyframes gradientAnimation {
@@ -669,6 +680,64 @@ socket.on("call-rejected", ({ username }) => {
     e.preventDefault();           // ✅ Required for Chrome
     e.returnValue = '';           // ✅ Required for other browsers
   });
+</script>
+<script>
+  // 🔒 Disable Right-Click
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
+  // 🔒 Disable Keyboard Shortcuts for DevTools
+  document.addEventListener("keydown", function (e) {
+    const k = e.key.toLowerCase();
+    if (
+      e.key === "F12" ||
+      (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(k)) ||
+      (e.ctrlKey && k === "u") ||
+      (e.metaKey && k === "u") // Mac users
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+
+  // 🔒 Disable Copy on Everything Except Shared Links
+  document.addEventListener("copy", function (e) {
+    const sel = window.getSelection();
+    const anchor = sel?.anchorNode;
+    const isLink = anchor && anchor.parentElement?.classList.contains("shared-link");
+
+    if (!isLink) {
+      e.preventDefault();
+    }
+  });
+
+  // 🔒 Disable All Selection (except .shared-link)
+  document.addEventListener("DOMContentLoaded", () => {
+    document.body.style.userSelect = "none";
+    document.querySelectorAll('.shared-link').forEach(link => {
+      link.style.userSelect = 'text';
+    });
+  });
+
+  // 🔒 Optional: Console Trap (blocks some console abuse)
+  Object.defineProperty(window, "console", {
+    get: function () {
+      if (!window._consoleBlocked) {
+        setTimeout(() => {
+          window.location.href = "about:blank"; // Kick user out
+        }, 50);
+      }
+      window._consoleBlocked = true;
+      return null;
+    }
+  });
+
+  // 🔒 Optional: Detect if DevTools is Open (Experimental)
+  setInterval(() => {
+    const devtoolsOpen = window.outerWidth - window.innerWidth > 100 || window.outerHeight - window.innerHeight > 100;
+    if (devtoolsOpen) {
+      document.body.innerHTML = "<h1 style='color: red; text-align:center; margin-top: 20%;'>⚠️ Developer Tools Detected. Session Locked.</h1>";
+    }
+  }, 1500);
 </script>
 </body>
 </html>
