@@ -205,7 +205,15 @@
 
   <div class="container">
     <h2>🌸Welcome! Login into My Private Chat</h2>
-    <input id="username" type="text" placeholder="Enter your username" />
+    <input
+  id="username"
+  type="text"
+  placeholder="Enter your username"
+  pattern="[A-Za-z]+"
+  title="Username must contain only letters A–Z (no emojis, numbers, or spaces)"
+  maxlength="20"
+  required
+/>
     <input id="room" type="text" placeholder="Enter room ID" />
     <button onclick="joinRoom()">Join Room</button>
 
@@ -226,15 +234,6 @@
   </div>
 
   <script>
-    function joinRoom() {
-      const username = document.getElementById('username').value.trim();
-      const room = document.getElementById('room').value.trim();
-      if (!username || !room) return alert("Please fill in both fields");
-      localStorage.setItem("chat_username", username);
-      localStorage.setItem("chat_room", room);
-      window.location.href = "/chat.html";
-    }
-
     function showPolicy() {
       document.getElementById("policyModal").style.display = "block";
     }
@@ -259,5 +258,32 @@
       particles.appendChild(star);
     }
   </script>
+<script>
+  const socket = io();
+
+  // ✅ Validate that username is only A–Z (no emoji, no numbers)
+  function isValidUsername(name) {
+    return /^[A-Za-z]+$/.test(name);
+  }
+
+  function joinRoom() {
+    const username = document.getElementById("username").value.trim();
+    const room = document.getElementById("room").value.trim();
+
+    if (!username || !room) {
+      return alert("Please fill in both fields");
+    }
+
+    if (!isValidUsername(username)) {
+      return alert("❌ Username must contain only letters (A–Z), no numbers, emojis, or symbols.");
+    }
+
+    // ✅ Save user info and redirect
+    sessionStorage.setItem("username", username);
+    sessionStorage.setItem("room", room);
+
+    window.location.href = "/chat";
+  }
+</script>
 </body>
 </html>
