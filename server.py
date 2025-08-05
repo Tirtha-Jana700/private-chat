@@ -28,7 +28,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def index():
     return send_file("login.html")
 
-@app.route("/chat.html")
+@app.route("/chat")
 def chat():
     return send_file("chat.html")
 
