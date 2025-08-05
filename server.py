@@ -1,3 +1,4 @@
+import bleach
 import eventlet
 eventlet.monkey_patch()
 
@@ -117,9 +118,15 @@ def handle_message(data):
     user = user_sessions.get(sid)
     if not user:
         return
+
+    # ✅ Sanitize username and message
+    username = bleach.clean(user["username"])
+    raw_msg = data.get("message", "")
+    message = bleach.clean(raw_msg, tags=[], strip=True)  # Remove all HTML tags
+
     emit("message", {
-        "username": user["username"],
-        "message": data.get("message", "")
+        "username": username,
+        "message": message
     }, room=user["room"])
 
 @socketio.on("typing")
