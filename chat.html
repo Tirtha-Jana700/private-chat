@@ -311,58 +311,6 @@ body {
    socket.emit("leave", { username, room });
  });
 
-  // 💬 Handle incoming messages (with smart file rendering)
-socket.on("message", data => {
-  const div = document.createElement("div");
-  div.className = "msg";
-
-  const msg = data.message;
-  let formattedMessage = "";
-
-  // 🔍 Detect image
-  if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
-    formattedMessage = `<img src="${msg}" style="max-width: 100%; border-radius: 12px;">`;
-  }
-  // 🔊 Detect audio
-  else if (msg.match(/\.(mp3|wav|ogg)$/i)) {
-    formattedMessage = `<audio controls style="width: 100%;"><source src="${msg}"></audio>`;
-  }
-  // 📁 Generic uploaded file
-  else if (msg.startsWith("http") && msg.match(/\/uploads\//)) {
-    const fileName = msg.split("/").pop();
-    formattedMessage = `📁 <a href="${msg}" download="${fileName}" rel="noopener noreferrer" class="shared-link">${fileName}</a>`;
-  }
-  // 🌐 Regular link
-  else if (msg.startsWith("http")) {
-    formattedMessage = `<a href="${msg}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
-  }
-  // 📝 Normal text
-  else {
-    formattedMessage = msg.replace(
-      /(https?:\/\/[^\s]+)/g,
-      (url) => `<a href="${url}" target="_blank" style="color:#74c0fc; text-decoration: underline;">${url}</a>`
-    );
-  }
-
-  div.innerHTML = `
-    <strong>${data.username}</strong>:
-    <div style="
-      background: rgba(255, 255, 255, 0.08);
-      padding: 10px 12px;
-      border-radius: 12px;
-      display: inline-block;
-      margin-top: 4px;
-      max-width: 80%;
-      word-wrap: break-word;
-    ">
-      ${formattedMessage}
-    </div>
-  `;
-
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-});
-
   // 📂 Receive file inside bubble
   socket.on("file", ({ username, fileName, data }) => {
     if (!username || !fileName || !data) return;
@@ -515,7 +463,65 @@ function cancelUpload() {
   }
 }
 </script>
+<script>
+const socket = io();
+const username = localStorage.getItem("chat_username") || "Guest";
+const room = localStorage.getItem("chat_room") || "default";
 
+const messages = document.getElementById("messages");
+const typingStatus = document.getElementById("typing");
+
+socket.on("message", data => {
+  const div = document.createElement("div");
+  div.className = "msg";
+
+  const msg = data.message;
+  let content = "";
+
+  const isImage = /\.(jpg|jpeg|png|gif)$/i.test(msg);
+  const isAudio = /\.(mp3|wav|ogg)$/i.test(msg);
+  const isFile = /\/uploads\//.test(msg);
+  const isLink = /^https?:\/\//.test(msg);
+
+  // Full file URL (force prefix if needed)
+  const fullURL = msg.startsWith("http") ? msg : `${location.origin}${msg}`;
+
+  if (isImage) {
+    content = `<img src="${fullURL}" alt="image" style="max-width: 100%; border-radius: 12px;">`;
+  } else if (isAudio) {
+    content = `<audio controls style="width: 100%;"><source src="${fullURL}" type="audio/mpeg">Your browser does not support audio playback.</audio>`;
+  } else if (isFile) {
+    const fileName = fullURL.split("/").pop();
+    content = `📁 <a href="${fullURL}" download="${fileName}" rel="noopener noreferrer" class="shared-link" style="color:#74c0fc;">${fileName}</a>`;
+  } else if (isLink) {
+    content = `<a href="${fullURL}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
+  } else {
+    // Plain text with clickable links
+    content = msg.replace(
+      /(https?:\/\/[^\s]+)/g,
+      url => `<a href="${url}" target="_blank" style="color:#74c0fc;">${url}</a>`
+    );
+  }
+
+  div.innerHTML = `
+    <strong>${data.username}</strong>:
+    <div style="
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-top: 4px;
+      max-width: 80%;
+      word-wrap: break-word;
+    ">
+      ${content}
+    </div>
+  `;
+
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
+</script>
 <script>
 let localStream, remoteStream, peerConnection;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
