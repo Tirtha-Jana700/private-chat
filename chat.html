@@ -311,35 +311,57 @@ body {
    socket.emit("leave", { username, room });
  });
 
-  // 💬 Handle incoming messages (with URL formatting)
-  socket.on("message", data => {
-    const div = document.createElement("div");
-    div.className = "msg";
+  // 💬 Handle incoming messages (with smart file rendering)
+socket.on("message", data => {
+  const div = document.createElement("div");
+  div.className = "msg";
 
-    // Detect and convert links
-    const formattedMessage = data.message.replace(
+  const msg = data.message;
+  let formattedMessage = "";
+
+  // 🔍 Detect image
+  if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
+    formattedMessage = `<img src="${msg}" style="max-width: 100%; border-radius: 12px;">`;
+  }
+  // 🔊 Detect audio
+  else if (msg.match(/\.(mp3|wav|ogg)$/i)) {
+    formattedMessage = `<audio controls style="width: 100%;"><source src="${msg}"></audio>`;
+  }
+  // 📁 Generic uploaded file
+  else if (msg.startsWith("http") && msg.match(/\/uploads\//)) {
+    const fileName = msg.split("/").pop();
+    formattedMessage = `📁 <a href="${msg}" download="${fileName}" rel="noopener noreferrer" class="shared-link">${fileName}</a>`;
+  }
+  // 🌐 Regular link
+  else if (msg.startsWith("http")) {
+    formattedMessage = `<a href="${msg}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
+  }
+  // 📝 Normal text
+  else {
+    formattedMessage = msg.replace(
       /(https?:\/\/[^\s]+)/g,
       (url) => `<a href="${url}" target="_blank" style="color:#74c0fc; text-decoration: underline;">${url}</a>`
     );
+  }
 
-    div.innerHTML = `
-      <strong>${data.username}</strong>:
-      <div style="
-        background: rgba(255, 255, 255, 0.08);
-        padding: 10px 12px;
-        border-radius: 12px;
-        display: inline-block;
-        margin-top: 4px;
-        max-width: 80%;
-        word-wrap: break-word;
-      ">
-        ${formattedMessage}
-      </div>
-    `;
+  div.innerHTML = `
+    <strong>${data.username}</strong>:
+    <div style="
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-top: 4px;
+      max-width: 80%;
+      word-wrap: break-word;
+    ">
+      ${formattedMessage}
+    </div>
+  `;
 
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  });
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
 
   // 📂 Receive file inside bubble
   socket.on("file", ({ username, fileName, data }) => {
