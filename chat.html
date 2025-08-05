@@ -475,34 +475,48 @@ socket.on("message", data => {
   const div = document.createElement("div");
   div.className = "msg";
 
-  const msg = data.message;
+  const msg = data.message.trim();
   let content = "";
 
-  const isImage = /\.(jpg|jpeg|png|gif)$/i.test(msg);
+  // Auto-detect content type
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(msg);
   const isAudio = /\.(mp3|wav|ogg)$/i.test(msg);
   const isFile = /\/uploads\//.test(msg);
   const isLink = /^https?:\/\//.test(msg);
 
-  // Full file URL (force prefix if needed)
+  // Full URL (supports relative paths from server)
   const fullURL = msg.startsWith("http") ? msg : `${location.origin}${msg}`;
 
+  // 🖼️ Image Preview
   if (isImage) {
     content = `<img src="${fullURL}" alt="image" style="max-width: 100%; border-radius: 12px;">`;
-  } else if (isAudio) {
-    content = `<audio controls style="width: 100%;"><source src="${fullURL}" type="audio/mpeg">Your browser does not support audio playback.</audio>`;
-  } else if (isFile) {
-    const fileName = fullURL.split("/").pop();
+  }
+  // 🔊 Audio Playback
+  else if (isAudio) {
+    content = `
+      <audio controls style="width: 100%;">
+        <source src="${fullURL}" type="audio/mpeg">
+        Your browser does not support audio playback.
+      </audio>`;
+  }
+  // 📁 Downloadable File
+  else if (isFile) {
+    const fileName = decodeURIComponent(fullURL.split("/").pop());
     content = `📁 <a href="${fullURL}" download="${fileName}" rel="noopener noreferrer" class="shared-link" style="color:#74c0fc;">${fileName}</a>`;
-  } else if (isLink) {
+  }
+  // 🌐 Regular Link
+  else if (isLink) {
     content = `<a href="${fullURL}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
-  } else {
-    // Plain text with clickable links
+  }
+  // 📝 Plain Text + Link Detection
+  else {
     content = msg.replace(
       /(https?:\/\/[^\s]+)/g,
       url => `<a href="${url}" target="_blank" style="color:#74c0fc;">${url}</a>`
     );
   }
 
+  // Final message bubble render
   div.innerHTML = `
     <strong>${data.username}</strong>:
     <div style="
