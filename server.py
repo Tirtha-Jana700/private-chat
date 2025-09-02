@@ -54,7 +54,8 @@ def upload_file():
             return jsonify({"error": "No file provided"}), 400
 
         # Security checks
-        if file.content_length > 50 * 1024 * 1024:  # 50MB limit
+        # Assuming a user-defined max file size, e.g., 50MB
+        if 'content-length' in request.headers and int(request.headers['content-length']) > 50 * 1024 * 1024:
             return jsonify({"error": "File too large"}), 400
 
         safe_name = secure_filename(file.filename)
@@ -76,6 +77,7 @@ def upload_file():
         }), 200
 
     except Exception as e:
+        print(f"File upload error: {e}")
         return jsonify({"error": "Upload failed"}), 500
 
 # --- Enhanced socket events ---
@@ -125,7 +127,6 @@ def handle_leave(data):
         leave_room(room)
         if sid in room_users[room]:
             del room_users[room][sid]
-        del user_sessions[sid]
         
         last_disconnect[username] = time.time()
         emit("message", {"username": "System", "message": f"🚪 {username} left the chat"}, room=room)
@@ -159,7 +160,7 @@ def handle_disconnect():
 
 def emit_user_list(room):
     """Emit updated user list to room"""
-    users = list(room_users[room].values())
+    users = sorted(list(room_users[room].values()))
     socketio.emit("update_user_list", {
         "users": users,
         "count": len(users)
