@@ -1,788 +1,1422 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Private Chat Room ✨</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Private Chat Room</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     :root {
-      --day-bg: url('https://ik.imagekit.io/mrg7wer1a/a0064ace5b8acab961e5f6fc4ec005eb.jpg?updatedAt=1754334087427');
-      --night-bg: url('https://ik.imagekit.io/mrg7wer1a/d51cb81754b0f48eee0866b8e9662ac5.jpg?updatedAt=1754334077449');
-      --glass: rgba(255, 255, 255, 0.1);
-      --border: rgba(255, 255, 255, 0.25);
-      --text-color: #fff;
-      --input-bg: rgba(255, 255, 255, 0.2);
-      --button-bg: #6c5ce7;
-      --button-hover: #a29bfe;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-bg-dark: rgba(0, 0, 0, 0.3);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-border-dark: rgba(255, 255, 255, 0.1);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.8);
+      --text-muted: rgba(255, 255, 255, 0.6);
+      --input-bg: rgba(255, 255, 255, 0.15);
+      --message-bg: rgba(255, 255, 255, 0.08);
+      --shadow-primary: 0 20px 40px rgba(0, 0, 0, 0.3);
+      --shadow-secondary: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
 
-    #messages {
-      height: 300px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 1rem;
-      background-color: rgba(0, 0, 0, 0.2);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    .msg {
-      text-align: left;
-      margin: 0.3rem 0;
-      padding: 0.5rem;
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--primary-gradient);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+    }
+
+    body.dark-mode {
+      background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem;
+      gap: 1rem;
+    }
+
+    .chat-header {
+      backdrop-filter: blur(20px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode .chat-header {
+      background: var(--glass-bg-dark);
+      border-color: var(--glass-border-dark);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, #e0e7ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .online-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .online-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--success-gradient);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #fff;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .control-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.15);
+      padding: 0.75rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    #typing {
-      font-size: 0.9rem;
-      color: #d1d1d1;
-      height: 1rem;
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-secondary);
+    }
+
+    .chat-main {
+      flex: 1;
+      display: flex;
+      gap: 1rem;
+      min-height: 0;
+    }
+
+    .chat-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .messages-container {
+      flex: 1;
+      backdrop-filter: blur(20px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      overflow-y: auto;
+      min-height: 0;
+      box-shadow: var(--shadow-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode .messages-container {
+      background: var(--glass-bg-dark);
+      border-color: var(--glass-border-dark);
+    }
+
+    .message {
+      margin-bottom: 1rem;
+      animation: messageSlideIn 0.3s ease-out;
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       margin-bottom: 0.5rem;
+    }
+
+    .message-author {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .message-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .message-content {
+      background: var(--message-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .message-content img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 0.5rem 0;
+    }
+
+    .message-content audio {
+      width: 100%;
+      margin: 0.5rem 0;
+    }
+
+    .message-content a {
+      color: #74c0fc;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .message-content a:hover {
+      text-decoration: underline;
+    }
+
+    .system-message .message-content {
+      background: var(--secondary-gradient);
+      color: #fff;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .typing-indicator {
+      padding: 0.5rem 1rem;
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 0.875rem;
+      min-height: 1.5rem;
+      transition: opacity 0.3s ease;
+    }
+
+    .input-section {
+      backdrop-filter: blur(20px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode .input-section {
+      background: var(--glass-bg-dark);
+      border-color: var(--glass-border-dark);
     }
 
     .input-row {
       display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    input[type="text"] {
-      flex: 1;
-      padding: 0.7rem;
-      border: none;
-      border-radius: 12px;
-      font-size: 1rem;
-      background: var(--input-bg);
-      color: white;
-      outline: none;
-    }
-
-    input::placeholder {
-      color: #ccc;
-    }
-
-    button, label[for="file"] {
-      padding: 0.6rem;
-      background-color: var(--button-bg);
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 1rem;
-      color: white;
-      transition: background 0.3s ease;
-    }
-
-    button:hover, label:hover {
-      background-color: var(--button-hover);
-    }
-
-    #file {
-      display: none;
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
+      gap: 0.75rem;
       align-items: center;
       margin-bottom: 1rem;
     }
 
-    .theme-toggle {
-      background-color: transparent;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      transition: transform 0.7s ease;
+    .message-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 1rem;
+      color: var(--text-primary);
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
     }
 
-    .theme-toggle:hover {
-      transform: rotate(360deg);
+    .message-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .message-input:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    }
+
+    .action-btn {
+      background: var(--secondary-gradient);
+      border: none;
+      border-radius: 12px;
+      padding: 1rem;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      min-width: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-secondary);
+    }
+
+    .action-btn:hover::before {
+      left: 100%;
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .action-btn.success {
+      background: var(--success-gradient);
+    }
+
+    .action-btn.danger {
+      background: var(--danger-gradient);
+    }
+
+    .call-controls {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .video-container {
+      backdrop-filter: blur(20px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: var(--shadow-secondary);
+      display: none;
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode .video-container {
+      background: var(--glass-bg-dark);
+      border-color: var(--glass-border-dark);
+    }
+
+    .video-area {
+      position: relative;
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 16/9;
+      margin-bottom: 1rem;
+    }
+
+    .remote-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .local-video {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      width: 200px;
+      height: 150px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      object-fit: cover;
+      background: #000;
+      transition: all 0.3s ease;
+    }
+
+    .local-video:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.02);
+    }
+
+    .video-controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .progress-container {
+      display: none;
+      margin-top: 1rem;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .progress-bar-wrapper {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      height: 8px;
+      margin-bottom: 0.75rem;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--secondary-gradient);
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.3s ease;
+      position: relative;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .progress-text {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .progress-actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 0.75rem;
+    }
+
+    .cancel-btn {
+      background: var(--danger-gradient);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.875rem;
+    }
+
+    .cancel-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal.show {
+      opacity: 1;
+    }
+
+    .modal-content {
+      position: relative;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      margin: 15% auto;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 16px;
+      color: var(--text-primary);
+      text-align: center;
+      animation: modalSlideIn 0.4s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .modal-text {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .modal-btn {
+      background: var(--secondary-gradient);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .modal-btn.success {
+      background: var(--success-gradient);
+    }
+
+    .modal-btn.danger {
+      background: var(--danger-gradient);
+    }
+
+    .modal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-secondary);
+    }
+
+    .sidebar {
+      width: 300px;
+      backdrop-filter: blur(20px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode .sidebar {
+      background: var(--glass-bg-dark);
+      border-color: var(--glass-border-dark);
+    }
+
+    .sidebar-header {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .user-list {
+      list-style: none;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .user-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--secondary-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .user-name {
+      font-weight: 500;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .camera-switch-btn {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .camera-switch-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 768px) {
+      .chat-container {
+        padding: 0.5rem;
+      }
+      
+      .chat-main {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        order: -1;
+      }
+      
+      .local-video {
+        width: 120px;
+        height: 90px;
+      }
+      
+      .input-row {
+        flex-wrap: wrap;
+      }
+      
+      .call-controls {
+        gap: 0.5rem;
+      }
+      
+      .video-controls {
+        gap: 0.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-title {
+        font-size: 1.25rem;
+      }
+      
+      .online-info {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .local-video {
+        width: 100px;
+        height: 75px;
+      }
     }
   </style>
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: 'Raleway', sans-serif;
-  background: var(--day-bg) center/cover no-repeat fixed;
-  color: var(--text-color);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  overflow-x: hidden;
-  transition: background 0.8s ease;
-}
-
-html.dark-mode, body.dark-mode {
-  background: var(--night-bg) center/cover no-repeat fixed !important;
-}
-
-body.dark-mode {
-  background: var(--night-bg) center/cover no-repeat fixed !important;
-}
-
-.chat-container {
-  backdrop-filter: blur(15px);
-  background-color: var(--glass);
-  border: 2px solid var(--border);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  width: 100%;
-  max-width: 600px;
-  margin-top: 20px;
-  padding: 1.5rem;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-body.dark-mode .chat-container,
-html.dark-mode .chat-container {
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-#videoArea {
-  max-height: 40vh;
-  overflow: hidden;
-}
-
-body {
-  user-select: none;
-}
-
-.shared-link {
-  user-select: text !important;
-  color: #4dd0e1;
-  word-break: break-word;
-  cursor: pointer;
-}
-</style>
-<style>
-@keyframes gradientAnimation {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-#cancelUploadBtn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 18px rgba(255, 100, 160, 0.7);
-}
-
-#cancelUploadBtn:active {
-  transform: scale(0.97);
-  opacity: 0.85;
-}
-</style>
 </head>
 <body>
   <div class="chat-container">
-    <div class="top-bar">
-      <h2>🌸 Welcome to My Private Chat</h2>
-      <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
-    </div>
-   <!-- 👥 Online Info -->
-     <div id="onlineInfo" style="margin: 10px 0;">
-       <strong>🟢 Online: <span id="onlineCount">0</span></strong>
-       <details style="margin-top: 6px;">
-         <summary style="cursor: pointer; color: #ccc; font-size: 0.95rem;">Show Online Users</summary>
-         <ul id="userList" style="margin-left: 18px; margin-top: 6px;"></ul>
-       </details>
-     </div>    
-    <div id="messages"></div>
-    <div id="typing"></div>
-    <div class="input-row">
-      <input type="text" id="messageInput" placeholder="Type your message..." oninput="notifyTyping()" />
-      <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
-      <label for="file"><i class="fas fa-paperclip"></i></label>
-      <input type="file" id="file" onchange="sendFile()" />
-    </div>
-    <!-- 📞 CALL START BUTTONS -->
-    <div style="margin-top: 12px;">
-      <button onclick="startCall(false)" title="Voice Call">
-        <i class="fas fa-phone"></i>
-      </button>
-      <button onclick="startCall(true)" title="Video Call">
-        <i class="fas fa-video"></i>
-      </button>
-    </div>
-   <!-- Upload Progress Bar -->
-  <div id="progressContainer" style="display: none; margin-top: 12px;">
-    <div style="
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 14px;
-    overflow: hidden;
-    position: relative;
-    height: 14px;
-    box-shadow: 0 0 10px rgba(100, 100, 255, 0.3);
-  ">
-    <div id="progressBar" style="
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(270deg, #8ec5fc, #e0c3fc);
-      background-size: 400% 400%;
-      animation: gradientAnimation 2s ease infinite;
-      border-radius: 14px;
-      transition: width 0.4s ease-in-out;
-    "></div>
-  </div>
-  <p id="progressText" style="
-    text-align: center;
-    font-size: 0.9rem;
-    color: #dcdcff;
-    margin-top: 6px;
-    font-weight: 500;
-  ">Uploading... 0%</p>
-  <button id="cancelUploadBtn" onclick="cancelUpload()" style="
-    margin: 10px auto 0;
-    display: none;
-    padding: 8px 20px;
-    border: none;
-    border-radius: 14px;
-    background: linear-gradient(90deg, #ff758c, #ff7eb3);
-    color: white;
-    font-weight: bold;
-    font-size: 0.95rem;
-    cursor: pointer;
-    box-shadow: 0 0 12px rgba(255, 120, 180, 0.4);
-    transition: all 0.3s ease;
-  ">Cancel Upload</button>
-   </div>
-
-  <!-- 📞 CALL CONTROL UI -->
-   <div id="callControls" style="display:none; justify-content:center; gap:12px; margin-top:14px;">
-     <button onclick="toggleMute()" title="Mute/Unmute">
-       <i id="micIcon" class="fas fa-microphone"></i>
-     </button>
-     <button onclick="toggleCamera()" title="Toggle Camera">
-       <i id="camIcon" class="fas fa-video"></i>
-     </button>
-     <button onclick="endCall()" title="End Call" style="background: #ff4d4d;">
-       <i class="fas fa-phone-slash"></i>
-     </button>
-   </div>
-
-   <!-- 🎥 VIDEO UI -->
-   <div id="videoArea" style="display:none; position:relative; margin-top:10px;">
-     <video id="remoteVideo" autoplay playsinline style="width:100%; border-radius:12px;"></video>
-     <video id="localVideo" muted autoplay playsinline style="width:120px; height:90px; position:absolute; bottom:10px; right:10px; border-radius:8px; box-shadow:0 0 15px rgba(0,255,255,0.5);"></video>
-   </div>
-
-   <!-- 🔔 INCOMING CALL POPUP -->
-   <div id="incomingCall" style="display:none; position:fixed; top: 20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:10px; z-index:999; box-shadow: 0 0 20px rgba(0,255,255,0.5);">
-     <p id="callerInfo" style="margin-bottom:10px; font-weight:bold;">Incoming Call...</p>
-     <button onclick="acceptCall()" title="Accept Call"><i class="fas fa-phone"></i></button>
-     <button onclick="rejectCall()" title="Reject Call" style="background:#ff4d4d;"><i class="fas fa-phone-slash"></i></button>
-   </div>
-  </div>
-<script>
-  const socket = io();
-  const username = localStorage.getItem("chat_username") || "Guest";
-  const room = localStorage.getItem("chat_room") || "default";
-
-  const messages = document.getElementById("messages");
-  const typingStatus = document.getElementById("typing");
-
-  // 👥 Join the room
-  socket.emit("join", { username, room });
- // 🟢 Update online user list and count
- socket.on("update_user_list",(data) => {
-   const userList = document.getElementById("userList");
-   const onlineCount = document.getElementById("onlineCount");
-
-   userList.innerHTML = "";
-   data.users.forEach(user => {
-     const li = document.createElement("li");
-     li.textContent = user;
-     userList.appendChild(li);
-   });
-
-   onlineCount.textContent = data.count;
- });
-
- // 🧼 Leave room on close
- window.addEventListener("beforeunload", () => {
-   socket.emit("leave", { username, room });
- });
-
-  // 📂 Receive file inside bubble
-  socket.on("file", ({ username, fileName, data }) => {
-    if (!username || !fileName || !data) return;
-
-    const div = document.createElement("div");
-    div.className = "msg";
-    div.style.wordWrap = "break-word";
-    div.innerHTML = `
-      <strong>${username}</strong>:
-      <div style="
-        background: rgba(255, 255, 255, 0.08);
-        padding: 10px 12px;
-        border-radius: 12px;
-        display: inline-block;
-        margin-top: 4px;
-        max-width: 80%;
-        word-wrap: break-word;
-      ">
-        <a href="${data}" download="${fileName}" style="
-          color: #a29bfe;
-          text-decoration: none;
-          font-weight: 500;
-          word-wrap: break-word;
-        ">
-          📎 ${fileName}
-        </a>
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-left">
+        <h1 class="header-title">Private Chat</h1>
+        <div class="online-info">
+          <div class="online-indicator">
+            <div class="pulse-dot"></div>
+            <span id="onlineCount">0</span> online
+          </div>
+        </div>
       </div>
-    `;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  });
-
-  // ✍️ Notify typing
-  function notifyTyping() {
-    socket.emit("typing", { username, room });
-  }
-
-  // 👀 Show typing status
-  socket.on("typing", (data) => {
-    typingStatus.textContent = `${data.username} is typing...`;
-    clearTimeout(window.typingTimeout);
-    window.typingTimeout = setTimeout(() => {
-      typingStatus.textContent = "";
-    }, 2000);
-  });
-
-  // ✉️ Send a message
-  function sendMessage() {
-    const msg = document.getElementById("messageInput").value.trim();
-    if (!msg) return;
-    socket.emit("message", { username, room, message: msg });
-    document.getElementById("messageInput").value = "";
-    typingStatus.textContent = "";
-  }
-
-  // 🌗 Toggle day/night mode
-   function toggleTheme(){
-    document.body.classList.toggle("dark-mode");
-   document.documentElement.classList.toggle("dark-mode"); // 🔥 adds dark mode to <html> too
-
-      const icon =    document.getElementById("theme-icon");
-      icon.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
-  }
-</script>
-<script>
-let currentUpload = null;
-
-function sendFile() {
-  const fileInput = document.getElementById("file");
-  const file = fileInput.files[0];
-  if (!file) return;
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const progressBar = document.getElementById("progressBar");
-  const progressContainer = document.getElementById("progressContainer");
-  const progressText = document.getElementById("progressText");
-  const cancelBtn = document.getElementById("cancelUploadBtn");
-
-  progressBar.style.width = "0%";
-  progressContainer.style.display = "block";
-  cancelBtn.style.display = "inline-block";
-  progressText.textContent = "Uploading... 0%";
-
-  const xhr = new XMLHttpRequest();
-  currentUpload = xhr;
-
-  xhr.upload.onprogress = function (e) {
-    if (e.lengthComputable) {
-      const percent = Math.round((e.loaded / e.total) * 100);
-      progressBar.style.width = percent + "%";
-      progressText.textContent = `Uploading... ${percent}%`;
-    }
-  };
-
-  xhr.onload = function () {
-    cancelBtn.style.display = "none";
-    if (xhr.status === 200) {
-      const data = JSON.parse(xhr.responseText);
-      if (data.url) {
-        socket.emit("message", {
-          username,
-          room,
-          message: `📁 <a href="${data.url}" download="${file.name}" style="color:#a29bfe;text-decoration:none;">${file.name}</a>`
-        });
-      }
-    } else {
-      progressText.textContent = "Upload failed ❌";
-    }
-
-    setTimeout(() => {
-      progressContainer.style.display = "none";
-      progressBar.style.width = "0%";
-      progressText.textContent = "";
-    }, 1000);
-    currentUpload = null;
-  };
-
-  xhr.onerror = function () {
-    cancelBtn.style.display = "none";
-    progressText.textContent = "Upload failed ❌";
-    setTimeout(() => {
-      progressContainer.style.display = "none";
-      progressBar.style.width = "0%";
-    }, 1000);
-    currentUpload = null;
-  };
-
-  xhr.open("POST", "/upload", true);
-  xhr.send(formData);
-}
-
-function cancelUpload() {
-  if (currentUpload) {
-    currentUpload.abort();
-    currentUpload = null;
-    const progressText = document.getElementById("progressText");
-    const cancelBtn = document.getElementById("cancelUploadBtn");
-    const progressBar = document.getElementById("progressBar");
-    const progressContainer = document.getElementById("progressContainer");
-
-    cancelBtn.style.display = "none";
-    progressText.textContent = "Upload cancelled ❌";
-    progressBar.style.width = "0%";
-    setTimeout(() => {
-      progressContainer.style.display = "none";
-      progressText.textContent = "";
-    }, 1500);
-  }
-}
-</script>
-<script>
-const socket = io();
-const username = localStorage.getItem("chat_username") || "Guest";
-const room = localStorage.getItem("chat_room") || "default";
-
-const messages = document.getElementById("messages");
-const typingStatus = document.getElementById("typing");
-
-socket.on("message", data => {
-  const div = document.createElement("div");
-  div.className = "msg";
-
-  const msg = data.message.trim();
-  let content = "";
-
-  // Auto-detect content type
-  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(msg);
-  const isAudio = /\.(mp3|wav|ogg)$/i.test(msg);
-  const isFile = /\/uploads\//.test(msg);
-  const isLink = /^https?:\/\//.test(msg);
-
-  // Full URL (supports relative paths from server)
-  const fullURL = msg.startsWith("http") ? msg : `${location.origin}${msg}`;
-
-  // 🖼️ Image Preview
-  if (isImage) {
-    content = `<img src="${fullURL}" alt="image" style="max-width: 100%; border-radius: 12px;">`;
-  }
-  // 🔊 Audio Playback
-  else if (isAudio) {
-    content = `
-      <audio controls style="width: 100%;">
-        <source src="${fullURL}" type="audio/mpeg">
-        Your browser does not support audio playback.
-      </audio>`;
-  }
-  // 📁 Downloadable File
-  else if (isFile) {
-    const fileName = decodeURIComponent(fullURL.split("/").pop());
-    content = `📁 <a href="${fullURL}" download="${fileName}" rel="noopener noreferrer" class="shared-link" style="color:#74c0fc;">${fileName}</a>`;
-  }
-  // 🌐 Regular Link
-  else if (isLink) {
-    content = `<a href="${fullURL}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
-  }
-  // 📝 Plain Text + Link Detection
-  else {
-    content = msg.replace(
-      /(https?:\/\/[^\s]+)/g,
-      url => `<a href="${url}" target="_blank" style="color:#74c0fc;">${url}</a>`
-    );
-  }
-
-  // Final message bubble render
-  div.innerHTML = `
-    <strong>${data.username}</strong>:
-    <div style="
-      background: rgba(255, 255, 255, 0.08);
-      padding: 10px 12px;
-      border-radius: 12px;
-      display: inline-block;
-      margin-top: 4px;
-      max-width: 80%;
-      word-wrap: break-word;
-    ">
-      ${content}
+      <div class="header-controls">
+        <button class="control-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle Theme">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button class="control-btn" onclick="showSettings()" title="Settings">
+          <i class="fas fa-cog"></i>
+        </button>
+      </div>
     </div>
-  `;
 
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-});
-</script>
-<script>
-let localStream, remoteStream, peerConnection;
-const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-let isVideoCall = false;
-let isMuted = false;
-let isCamOn = true;
+    <!-- Main Chat Area -->
+    <div class="chat-main">
+      <div class="chat-content">
+        <!-- Messages -->
+        <div class="messages-container" id="messagesContainer"></div>
+        
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator"></div>
 
-function startCall(video) {
-  isVideoCall = video;
-  document.getElementById("videoArea").style.display = video ? "block" : "none";
-  document.getElementById("callControls").style.display = "flex";
-  document.getElementById("camIcon").parentElement.style.display = video ? "inline-block" : "none";
+        <!-- Video Container -->
+        <div class="video-container" id="videoContainer">
+          <div class="video-area">
+            <video id="remoteVideo" class="remote-video" autoplay playsinline></video>
+            <video id="localVideo" class="local-video" muted autoplay playsinline></video>
+            <button class="camera-switch-btn hidden" id="cameraSwitchBtn" onclick="switchCamera()" title="Switch Camera">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="video-controls" id="videoControls">
+            <button class="action-btn" id="muteBtn" onclick="toggleMute()" title="Toggle Microphone">
+              <i class="fas fa-microphone" id="micIcon"></i>
+            </button>
+            <button class="action-btn" id="cameraBtn" onclick="toggleCamera()" title="Toggle Camera">
+              <i class="fas fa-video" id="camIcon"></i>
+            </button>
+            <button class="action-btn danger" onclick="endCall()" title="End Call">
+              <i class="fas fa-phone-slash"></i>
+            </button>
+          </div>
+        </div>
 
-  navigator.mediaDevices.getUserMedia({ audio: true, video: video }).then(stream => {
-    localStream = stream;
-    document.getElementById("localVideo").srcObject = stream;
+        <!-- Input Section -->
+        <div class="input-section">
+          <div class="input-row">
+            <input 
+              type="text" 
+              id="messageInput" 
+              class="message-input"
+              placeholder="Type your message..."
+              onkeypress="handleKeyPress(event)"
+              oninput="handleTyping()"
+            >
+            <button class="action-btn" onclick="sendMessage()" title="Send Message">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+            <label for="fileInput" class="action-btn" title="Upload File">
+              <i class="fas fa-paperclip"></i>
+            </label>
+            <input type="file" id="fileInput" class="file-input" onchange="handleFileUpload()">
+          </div>
+          
+          <!-- Call Controls -->
+          <div class="call-controls">
+            <button class="action-btn success" onclick="startCall(false)" title="Voice Call">
+              <i class="fas fa-phone"></i> Voice
+            </button>
+            <button class="action-btn success" onclick="startCall(true)" title="Video Call">
+              <i class="fas fa-video"></i> Video
+            </button>
+          </div>
 
-    peerConnection = new RTCPeerConnection(config);
-    peerConnection.onicecandidate = e => {
-      if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
+          <!-- Upload Progress -->
+          <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">Uploading... 0%</div>
+            <div class="progress-actions">
+              <button class="cancel-btn" id="cancelBtn" onclick="cancelUpload()">
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <i class="fas fa-users"></i> Online Users
+        </div>
+        <ul class="user-list" id="userList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Incoming Call Modal -->
+  <div class="modal" id="incomingCallModal">
+    <div class="modal-content">
+      <div class="modal-title">
+        <i class="fas fa-phone-alt"></i> Incoming Call
+      </div>
+      <div class="modal-text" id="callerInfo">Someone is calling you...</div>
+      <div class="modal-actions">
+        <button class="modal-btn success" onclick="acceptCall()">
+          <i class="fas fa-phone"></i> Accept
+        </button>
+        <button class="modal-btn danger" onclick="rejectCall()">
+          <i class="fas fa-phone-slash"></i> Decline
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-title">
+        <i class="fas fa-cog"></i> Settings
+      </div>
+      <div class="modal-text">
+        <p>Room: <strong id="currentRoom"></strong></p>
+        <p>Username: <strong id="currentUsername"></strong></p>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn danger" onclick="leaveRoom()">
+          <i class="fas fa-sign-out-alt"></i> Leave Room
+        </button>
+        <button class="modal-btn" onclick="hideSettings()">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Socket.IO
+    const socket = io();
+    
+    // Get user info from session storage
+    const username = sessionStorage.getItem('chat_username') || 'Guest';
+    const room = sessionStorage.getItem('chat_room') || 'default';
+    
+    // Update settings display
+    document.getElementById('currentUsername').textContent = username;
+    document.getElementById('currentRoom').textContent = room;
+    
+    // WebRTC variables
+    let localStream = null;
+    let remoteStream = null;
+    let peerConnection = null;
+    let isVideoCall = false;
+    let isMuted = false;
+    let isCameraOn = true;
+    let videoDevices = [];
+    let currentCameraIndex = 0;
+    let currentUpload = null;
+    
+    // WebRTC configuration
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
     };
-    peerConnection.ontrack = e => {
-      document.getElementById("remoteVideo").srcObject = e.streams[0];
-    };
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    peerConnection.createOffer().then(offer => {
-      peerConnection.setLocalDescription(offer);
-      socket.emit("offer", { offer, username, room, video });
+    
+    // DOM elements
+    const messagesContainer = document.getElementById('messagesContainer');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const messageInput = document.getElementById('messageInput');
+    const onlineCountEl = document.getElementById('onlineCount');
+    const userListEl = document.getElementById('userList');
+    const videoContainer = document.getElementById('videoContainer');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const cameraSwitchBtn = document.getElementById('cameraSwitchBtn');
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      // Join room
+      socket.emit('join', { username, room });
+      
+      // Focus message input
+      messageInput.focus();
+      
+      // Get available video devices
+      getVideoDevices();
+      
+      // Load theme preference
+      loadTheme();
     });
-  });
-}
-
-socket.on("offer", ({ offer, username: caller, video }) => {
-  isVideoCall = video;
-  window.pendingOffer = offer;
-  window.caller = caller;
-
-  // Only show the popup — don’t show video area or controls yet
-  document.getElementById("callerInfo").textContent = `${caller} is calling...`;
-  document.getElementById("incomingCall").style.display = "block";
-});
-
-function acceptCall() {
-  document.getElementById("incomingCall").style.display = "none";
-
-  navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall }).then(stream => {
-    localStream = stream;
-    document.getElementById("localVideo").srcObject = stream;
-
-    peerConnection = new RTCPeerConnection(config);
-    peerConnection.onicecandidate = e => {
-      if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
-    };
-    peerConnection.ontrack = e => {
-      document.getElementById("remoteVideo").srcObject = e.streams[0];
-    };
-
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
-    peerConnection.createAnswer().then(answer => {
-      peerConnection.setLocalDescription(answer);
-      socket.emit("answer", { answer, room });
-    });
-
-    // ✅ Show call UI only after accepting
-    document.getElementById("videoArea").style.display = isVideoCall ? "block" : "none";
-    document.getElementById("callControls").style.display = "flex";
-
-    // ✅ Show/hide camera toggle
-    document.getElementById("camIcon").parentElement.style.display = isVideoCall ? "inline-block" : "none";
-  });
-}
-
-function rejectCall() {
-  document.getElementById("incomingCall").style.display = "none";
-
-  // 🔴 Emit a signal to inform the caller
-  socket.emit("reject-call", { username, room });
-
-  // 🔴 Just in case we received a stream briefly
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-}
-
-socket.on("answer", ({ answer }) => {
-  peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-});
-
-socket.on("ice-candidate", ({ candidate }) => {
-  peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-});
-
-function toggleMute() {
-  if (!localStream) return;
-  isMuted = !isMuted;
-  localStream.getAudioTracks()[0].enabled = !isMuted;
-  document.getElementById("micIcon").className = isMuted ? "fas fa-microphone-slash" : "fas fa-microphone";
-}
-
-function toggleCamera() {
-  if (!localStream) return;
-  isCamOn = !isCamOn;
-  localStream.getVideoTracks()[0].enabled = isCamOn;
-  document.getElementById("camIcon").className = isCamOn ? "fas fa-video" : "fas fa-video-slash";
-}
-
-function endCall() {
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-
-  document.getElementById("remoteVideo").srcObject = null;
-  document.getElementById("localVideo").srcObject = null;
-  document.getElementById("videoArea").style.display = "none";
-  document.getElementById("callControls").style.display = "none";
-
-  socket.emit("call-ended", { username, room });
-  socket.emit("message", { username: "System", room, message: "📴 Call ended." });
-}
-
-socket.on("call-ended", ({ username }) => {
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-
-  document.getElementById("remoteVideo").srcObject = null;
-  document.getElementById("localVideo").srcObject = null;
-  document.getElementById("videoArea").style.display = "none";
-  document.getElementById("callControls").style.display = "none";
-
-  socket.emit("message", {
-    username: "System",
-    room,
-    message: `📴 Call ended by ${username}`
-  });
-});
-
-socket.on("call-rejected", ({ username }) => {
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-
-  document.getElementById("remoteVideo").srcObject = null;
-  document.getElementById("localVideo").srcObject = null;
-  document.getElementById("videoArea").style.display = "none";
-  document.getElementById("callControls").style.display = "none";
-
-  socket.emit("message", {
-    username: "System",
-    room,
-    message: `❌ Call was rejected by ${username}`
-  });
-});
-</script>
-
-<script>
-  // Show default browser alert on refresh or tab close
-  window.addEventListener("beforeunload", function (e) {
-    e.preventDefault();           // ✅ Required for Chrome
-    e.returnValue = '';           // ✅ Required for other browsers
-  });
-</script>
-<script>
-  // 🔒 Disable Right-Click
-  document.addEventListener("contextmenu", e => e.preventDefault());
-
-  // 🔒 Disable Keyboard Shortcuts for DevTools
-  document.addEventListener("keydown", function (e) {
-    const k = e.key.toLowerCase();
-    if (
-      e.key === "F12" ||
-      (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(k)) ||
-      (e.ctrlKey && k === "u") ||
-      (e.metaKey && k === "u") // Mac users
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  });
-
-  // 🔒 Disable Copy on Everything Except Shared Links
-  document.addEventListener("copy", function (e) {
-    const sel = window.getSelection();
-    const anchor = sel?.anchorNode;
-    const isLink = anchor && anchor.parentElement?.classList.contains("shared-link");
-
-    if (!isLink) {
-      e.preventDefault();
-    }
-  });
-
-  // 🔒 Disable All Selection (except .shared-link)
-  document.addEventListener("DOMContentLoaded", () => {
-    document.body.style.userSelect = "none";
-    document.querySelectorAll('.shared-link').forEach(link => {
-      link.style.userSelect = 'text';
-    });
-  });
-
-  // 🔒 Optional: Console Trap (blocks some console abuse)
-  Object.defineProperty(window, "console", {
-    get: function () {
-      if (!window._consoleBlocked) {
-        setTimeout(() => {
-          window.location.href = "about:blank"; // Kick user out
-        }, 50);
+    
+    // Socket event listeners
+    socket.on('message', handleMessage);
+    socket.on('update_user_list', updateUserList);
+    socket.on('typing', handleTyping);
+    socket.on('offer', handleOffer);
+    socket.on('answer', handleAnswer);
+    socket.on('ice-candidate', handleIceCandidate);
+    socket.on('call-rejected', handleCallRejected);
+    socket.on('call-ended', handleCallEnded);
+    socket.on('error', handleError);
+    
+    // Message handling
+    function handleMessage(data) {
+      if (!data.username || !data.message) return;
+      
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message';
+      
+      if (data.username === 'System') {
+        messageEl.classList.add('system-message');
       }
-      window._consoleBlocked = true;
-      return null;
+      
+      const timeStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+      
+      // Process message content
+      let content = data.message;
+      
+      // Handle different content types
+      if (content.startsWith('FILE_UPLOAD:')) {
+        const fileData = JSON.parse(content.substring('FILE_UPLOAD:'.length));
+        const fileType = fileData.mimeType.split('/')[0];
+        
+        if (fileType === 'image') {
+          content = `<img src="${fileData.url}" alt="${fileData.name}">`;
+        } else if (fileType === 'audio') {
+          content = `<audio controls src="${fileData.url}"></audio>`;
+        } else {
+          content = `<a href="${fileData.url}" target="_blank" download="${fileData.name}">${fileData.name}</a>`;
+        }
+      }
+      
+      const html = `
+        <div class="message-header">
+          <span class="message-author">${data.username}</span>
+          <span class="message-time">${timeStr}</span>
+        </div>
+        <div class="message-content">${content}</div>
+      `;
+      
+      messageEl.innerHTML = html;
+      messagesContainer.appendChild(messageEl);
+      scrollToBottom();
     }
-  });
-
-  // 🔒 Optional: Detect if DevTools is Open (Experimental)
-  setInterval(() => {
-    const devtoolsOpen = window.outerWidth - window.innerWidth > 100 || window.outerHeight - window.innerHeight > 100;
-    if (devtoolsOpen) {
-      document.body.innerHTML = "<h1 style='color: red; text-align:center; margin-top: 20%;'>⚠️ Developer Tools Detected. Session Locked.</h1>";
+    
+    // Send message
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (message) {
+        socket.emit('message', { username, room, message });
+        messageInput.value = '';
+        typingIndicator.textContent = '';
+      }
     }
-  }, 1500);
-</script>
+    
+    // Handle Enter key press
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+    
+    // Handle typing indicator
+    let typingTimeout;
+    function handleTyping() {
+      socket.emit('typing', { username, room });
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socket.emit('typing', { username: null, room });
+      }, 1000);
+    }
+    
+    // Display typing indicator
+    function handleTyping(data) {
+      if (data.username && data.username !== username) {
+        typingIndicator.textContent = `${data.username} is typing...`;
+      } else {
+        typingIndicator.textContent = '';
+      }
+    }
+    
+    // Update user list and online count
+    function updateUserList(users) {
+      onlineCountEl.textContent = users.length;
+      userListEl.innerHTML = '';
+      users.forEach(user => {
+        const userItem = document.createElement('li');
+        userItem.className = 'user-item';
+        const avatar = user.name.charAt(0).toUpperCase();
+        userItem.innerHTML = `
+          <div class="user-avatar">${avatar}</div>
+          <span class="user-name">${user.name}</span>
+        `;
+        userListEl.appendChild(userItem);
+      });
+    }
+    
+    // Scroll messages to the bottom
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // Handle file upload
+    function handleFileUpload() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return;
+      
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      progressText.textContent = 'Uploading... 0%';
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('room', room);
+      formData.append('username', username);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/upload', true);
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = `${percent}%`;
+          progressText.textContent = `Uploading... ${percent}%`;
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          progressText.textContent = 'Upload complete!';
+          setTimeout(() => {
+            progressContainer.style.display = 'none';
+          }, 1500);
+          
+          const fileData = JSON.parse(xhr.responseText);
+          const message = `FILE_UPLOAD:${JSON.stringify(fileData)}`;
+          socket.emit('message', { username, room, message });
+          
+        } else {
+          progressText.textContent = 'Upload failed.';
+          setTimeout(() => {
+            progressContainer.style.display = 'none';
+          }, 1500);
+          handleError('File upload failed.');
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        progressText.textContent = 'Upload failed.';
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+        }, 1500);
+        handleError('File upload failed.');
+      });
+      
+      currentUpload = xhr;
+      xhr.send(formData);
+    }
+    
+    // Cancel file upload
+    function cancelUpload() {
+      if (currentUpload) {
+        currentUpload.abort();
+        const progressContainer = document.getElementById('progressContainer');
+        const progressText = document.getElementById('progressText');
+        progressText.textContent = 'Upload cancelled.';
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+        }, 1500);
+        currentUpload = null;
+      }
+    }
+    
+    // WebRTC call functions
+    async function startCall(is_video_call) {
+      isVideoCall = is_video_call;
+      try {
+        const constraints = {
+          audio: true,
+          video: isVideoCall ? { facingMode: 'user' } : false
+        };
+        
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        localVideo.srcObject = localStream;
+        
+        peerConnection = new RTCPeerConnection(rtcConfig);
+        
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.emit('ice-candidate', {
+              candidate: event.candidate,
+              room,
+              senderId: socket.id
+            });
+          }
+        };
+        
+        peerConnection.ontrack = (event) => {
+          remoteVideo.srcObject = event.streams[0];
+          remoteStream = event.streams[0];
+          videoContainer.style.display = 'flex';
+        };
+        
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
+        
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit('offer', {
+          offer,
+          room,
+          senderId: socket.id,
+          isVideoCall
+        });
+        
+        showMessage('System', 'Starting call...');
+        
+        // Hide call buttons
+        document.querySelector('.call-controls').classList.add('hidden');
+        
+      } catch (err) {
+        handleError('Error starting call: ' + err.message);
+      }
+    }
+    
+    function handleOffer(data) {
+      if (data.senderId === socket.id) return;
+      
+      const incomingCallModal = document.getElementById('incomingCallModal');
+      const callerInfo = document.getElementById('callerInfo');
+      callerInfo.textContent = `${data.username} is calling you. Do you want to ${data.isVideoCall ? 'video call' : 'voice call'}?`;
+      incomingCallModal.classList.add('show');
+      incomingCallModal.style.display = 'flex';
+      
+      window.acceptCall = async () => {
+        incomingCallModal.classList.remove('show');
+        incomingCallModal.style.display = 'none';
+        
+        isVideoCall = data.isVideoCall;
+        
+        try {
+          const constraints = {
+            audio: true,
+            video: isVideoCall ? { facingMode: 'user' } : false
+          };
+          
+          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          localVideo.srcObject = localStream;
+          
+          peerConnection = new RTCPeerConnection(rtcConfig);
+          
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              socket.emit('ice-candidate', {
+                candidate: event.candidate,
+                room,
+                senderId: socket.id
+              });
+            }
+          };
+          
+          peerConnection.ontrack = (event) => {
+            remoteVideo.srcObject = event.streams[0];
+            remoteStream = event.streams[0];
+            videoContainer.style.display = 'flex';
+          };
+          
+          localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+          });
+          
+          await peerConnection.setRemoteDescription(data.offer);
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          
+          socket.emit('answer', {
+            answer,
+            room,
+            receiverId: data.senderId
+          });
+          
+          showMessage('System', `${data.username} accepted your call.`);
+          document.querySelector('.call-controls').classList.add('hidden');
+          
+        } catch (err) {
+          handleError('Error accepting call: ' + err.message);
+        }
+      };
+      
+      window.rejectCall = () => {
+        incomingCallModal.classList.remove('show');
+        incomingCallModal.style.display = 'none';
+        socket.emit('call-rejected', {
+          room,
+          receiverId: data.senderId
+        });
+      };
+    }
+    
+    async function handleAnswer(data) {
+      if (!peerConnection) return;
+      await peerConnection.setRemoteDescription(data.answer);
+      showMessage('System', 'Call accepted. Connecting...');
+      videoContainer.style.display = 'flex';
+    }
+    
+    function handleIceCandidate(data) {
+      if (!peerConnection) return;
+      peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    }
+    
+    function handleCallRejected(data) {
+      if (data.receiverId === socket.id) {
+        showMessage('System', 'Your call was rejected.');
+        endCall();
+      }
+    }
+    
+    function endCall() {
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      
+      localVideo.srcObject = null;
+      remoteVideo.srcObject = null;
+      videoContainer.style.display = 'none';
+      
+      // Show call buttons
+      document.querySelector('.call-controls').classList.remove('hidden');
+      
+      socket.emit('call-ended', { room, senderId: socket.id });
+      showMessage('System', 'Call ended.');
+    }
+    
+    function handleCallEnded(data) {
+      if (data.senderId !== socket.id) {
+        showMessage('System', 'Call ended by other party.');
+        endCall();
+      }
+    }
+    
+    // Call controls
+    function toggleMute() {
+      if (localStream) {
+        isMuted = !isMuted;
+        localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+        document.getElementById('micIcon').className = `fas fa-microphone${isMuted ? '-slash' : ''}`;
+      }
+    }
+    
+    function toggleCamera() {
+      if (localStream) {
+        isCameraOn = !isCameraOn;
+        localStream.getVideoTracks().forEach(track => track.enabled = isCameraOn);
+        document.getElementById('camIcon').className = `fas fa-video${!isCameraOn ? '-slash' : ''}`;
+        cameraSwitchBtn.classList.toggle('hidden', !isCameraOn);
+      }
+    }
+    
+    async function getVideoDevices() {
+      try {
+        videoDevices = await navigator.mediaDevices.enumerateDevices()
+          .then(devices => devices.filter(device => device.kind === 'videoinput'));
+        cameraSwitchBtn.classList.toggle('hidden', videoDevices.length <= 1);
+      } catch (err) {
+        handleError('Error getting video devices: ' + err.message);
+      }
+    }
+    
+    async function switchCamera() {
+      if (videoDevices.length > 1) {
+        currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
+        const newDeviceId = videoDevices[currentCameraIndex].deviceId;
+        
+        try {
+          if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+          }
+          
+          const constraints = {
+            audio: true,
+            video: { deviceId: { exact: newDeviceId } }
+          };
+          
+          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          localVideo.srcObject = localStream;
+          
+          if (peerConnection) {
+            const videoSender = peerConnection.getSenders().find(sender => sender.track.kind === 'video');
+            if (videoSender) {
+              videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+            }
+          }
+        } catch (err) {
+          handleError('Error switching camera: ' + err.message);
+        }
+      }
+    }
+    
+    // UI functions
+    function showModal(id) {
+      document.getElementById(id).classList.add('show');
+      document.getElementById(id).style.display = 'flex';
+    }
+    
+    function hideModal(id) {
+      document.getElementById(id).classList.remove('show');
+      setTimeout(() => {
+        document.getElementById(id).style.display = 'none';
+      }, 300);
+    }
+    
+    function showSettings() {
+      showModal('settingsModal');
+    }
+    
+    function hideSettings() {
+      hideModal('settingsModal');
+    }
+    
+    function leaveRoom() {
+      endCall();
+      socket.emit('leave', { username, room });
+      sessionStorage.clear();
+      window.location.href = '/';
+    }
+    
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      const icon = document.getElementById('themeToggle').querySelector('i');
+      icon.className = `fas fa-${isDark ? 'sun' : 'moon'}`;
+    }
+    
+    function loadTheme() {
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeToggle').querySelector('i').className = 'fas fa-sun';
+      }
+    }
+    
+    function handleError(message) {
+      console.error(message);
+      showMessage('System', `Error: ${message}`);
+    }
+    
+    function showMessage(author, message) {
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message system-message';
+      messageEl.innerHTML = `
+        <div class="message-header">
+          <span class="message-author">${author}</span>
+          <span class="message-time">${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="message-content">${message}</div>
+      `;
+      messagesContainer.appendChild(messageEl);
+      scrollToBottom();
+    }
+  </script>
 </body>
 </html>
-
-
 
