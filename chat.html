@@ -345,13 +345,17 @@
             }
         }
         
+        .sidebar-section {
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
         .sidebar h3 {
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--text-primary);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -538,6 +542,10 @@
             </div>
             
             <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Your Profile</h3>
+                    <p style="font-size: 0.95rem; color: var(--text-secondary);"><i class="fas fa-user-circle"></i> <span id="userDisplayName"></span></p>
+                </div>
                 <h3>Users Online <span id="userCount">0</span></h3>
                 <ul class="user-list" id="userList"></ul>
             </div>
@@ -611,6 +619,7 @@
         const fileInput = document.getElementById('fileInput');
         const typingIndicator = document.getElementById('typingIndicator');
         const leaveBtn = document.getElementById('leaveBtn');
+        const userDisplayNameEl = document.getElementById('userDisplayName');
 
         // WebRTC Elements
         const videoCallBtn = document.getElementById('videoCallBtn');
@@ -642,6 +651,7 @@
         }
 
         roomNameEl.textContent = room;
+        userDisplayNameEl.textContent = username;
         const socket = io();
 
         // --- SocketIO Event Handlers ---
@@ -729,7 +739,7 @@
             alertModal.innerHTML = `
                 <div class="modal-content">
                     <p style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem;">${message}</p>
-                    <button class="modal-close" style="background: #667eea; border-color: #764ba2; color: white;" onclick="this.parentElement.parentElement.remove();">OK</button>
+                    <button class="modal-close" style="background: #667eea; border-color: #764ba2; color: white; border-radius: 10px; padding: 0.7rem 1.4rem; cursor: pointer;" onclick="this.parentElement.parentElement.remove();">OK</button>
                 </div>
             `;
             document.body.appendChild(alertModal);
