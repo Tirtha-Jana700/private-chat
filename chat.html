@@ -3,202 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Chat Room</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Teyvat Chat Hub</title>
+    <!-- Use a fantasy-style font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        /* Custom Properties for a Genshin-inspired Theme */
+        /* CSS Variables for Genshin-inspired theme */
         :root {
-            --primary-gradient: linear-gradient(145deg, #7c5a96 0%, #4a2d64 100%);
-            --secondary-gradient: linear-gradient(45deg, #ffc878 0%, #ffa565 100%);
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --glass-bg-darker: rgba(0, 0, 0, 0.15);
-            --text-primary: #f0f0f0;
-            --text-secondary: rgba(255, 255, 255, 0.7);
-            --input-bg: rgba(255, 255, 255, 0.12);
-            --shadow-primary: 0 20px 40px rgba(0, 0, 0, 0.4);
-            --shadow-secondary: 0 8px 24px rgba(0, 0, 0, 0.3);
-            --transition-speed: 0.3s;
+            --genshin-gold: #e2b95b;
+            --genshin-gold-light: #fbe69e;
+            --genshin-dark: #1e263a;
+            --genshin-dark-light: #313f59;
+            --genshin-purple: #4a4e82;
+            --genshin-blue: #3a496b;
+            --genshin-text-primary: #fff;
+            --genshin-text-secondary: rgba(255, 255, 255, 0.7);
+            --genshin-border: rgba(255, 255, 255, 0.15);
+            --genshin-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            --genshin-glow: 0 0 10px var(--genshin-gold-light);
         }
 
-        /* General & Layout */
+        /* General Body and Background Styling */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         html, body {
             height: 100%;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
             overflow: hidden;
-            background: var(--primary-gradient);
+            background: linear-gradient(135deg, var(--genshin-dark), #151a28);
+            color: var(--genshin-text-primary);
         }
 
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            position: relative;
-        }
-
-        /* Background Effects */
-        .background-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-
-        .floating-shape {
-            position: absolute;
-            background: var(--secondary-gradient);
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.15;
-            animation: float 20s infinite ease-in-out;
-        }
-
-        .floating-shape:nth-child(1) {
-            width: 300px;
-            height: 300px;
-            top: -150px;
-            left: -150px;
-            animation-delay: 0s;
-        }
-
-        .floating-shape:nth-child(2) {
-            width: 200px;
-            height: 200px;
-            top: 50%;
-            right: -100px;
-            animation-delay: -7s;
-        }
-
-        .floating-shape:nth-child(3) {
-            width: 150px;
-            height: 150px;
-            bottom: -75px;
-            left: 30%;
-            animation-delay: -14s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            33% { transform: translateY(-30px) rotate(120deg); }
-            66% { transform: translateY(20px) rotate(240deg); }
-        }
-
-        .particles {
+        /* Magical Background Particles */
+        .background-particles {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1;
+            z-index: -1;
+            overflow: hidden;
         }
 
         .particle {
             position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.6);
+            background: radial-gradient(circle, var(--genshin-gold-light) 0%, transparent 70%);
             border-radius: 50%;
-            animation: particleFloat 15s infinite linear;
-        }
-
-        @keyframes particleFloat {
-            0% { transform: translateY(100vh) scale(0); opacity: 0; }
-            10% { opacity: 1; transform: scale(1); }
-            90% { opacity: 1; transform: scale(1); }
-            100% { transform: translateY(-10vh) scale(0); opacity: 0; }
-        }
-
-        /* Main Chat Container */
-        .chat-container {
-            backdrop-filter: blur(20px);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 1.5rem;
-            width: 95%;
-            max-width: 1200px;
-            height: 90vh;
-            margin: 0 1rem;
-            box-shadow: var(--shadow-primary);
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            animation: slideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        /* Header */
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .chat-header-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: clamp(1.2rem, 3vw, 1.8rem);
-            font-weight: 700;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            letter-spacing: 1px;
-        }
-
-        .chat-header-title i {
-            margin-right: 0.75rem;
-            color: #ffc878;
-        }
-
-        .chat-actions button {
-            background: var(--glass-bg-darker);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
-            padding: 0.75rem;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            transition: all var(--transition-speed) ease;
-            cursor: pointer;
-            margin-left: 0.5rem;
+            animation: moveParticle 20s infinite ease-in-out;
+            opacity: 0;
+            will-change: transform, opacity;
         }
         
-        .chat-actions button:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        @keyframes moveParticle {
+            0%, 100% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0;
+            }
+            10% { opacity: 0.2; transform: translateY(-50vh) scale(1); }
+            90% { opacity: 0.2; transform: translateY(-90vh) scale(1.5); }
+            100% { opacity: 0; transform: translateY(-100vh) scale(2); }
         }
 
-        /* Main Body & Sidebar */
-        .chat-main {
+        /* Main Container Styling */
+        .chat-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 95vh;
+            margin: 2.5vh auto;
             display: flex;
-            flex-grow: 1;
-            overflow: hidden;
             flex-direction: column;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--genshin-dark-light);
+            border: 1px solid var(--genshin-border);
+            box-shadow: var(--genshin-shadow);
+            position: relative;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Genshin UI specific styles for borders and backgrounds */
+        .ui-panel {
+            background: var(--genshin-dark-light);
+            border: 1px solid var(--genshin-border);
+            position: relative;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ui-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid var(--genshin-gold);
+            border-radius: 10px;
+            pointer-events: none;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+
+        .ui-panel:hover::before {
+            opacity: 0.6;
+        }
+        
+        /* Layout */
+        .chat-main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
         @media (min-width: 768px) {
@@ -206,11 +133,54 @@
                 flex-direction: row;
             }
         }
+        
+        /* Chat Header */
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--genshin-purple);
+            box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--genshin-border);
+        }
+        
+        .chat-header-title {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--genshin-gold-light);
+            text-shadow: 0 0 5px rgba(226, 185, 91, 0.5);
+        }
+        
+        .chat-actions button {
+            background: var(--genshin-blue);
+            border: 1px solid var(--genshin-border);
+            color: var(--genshin-gold);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.2);
+        }
+        
+        .chat-actions button:hover {
+            background: var(--genshin-purple);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), var(--genshin-glow);
+        }
 
+        /* Chat Message Area */
         .chat-messages {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 1rem 0;
+            padding: 1rem;
             display: flex;
             flex-direction: column;
             gap: 1rem;
@@ -221,101 +191,41 @@
         .chat-messages::-webkit-scrollbar {
             display: none;
         }
-
-        /* Input Area */
-        .chat-input-area {
-            display: flex;
-            align-items: center;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
         
-        .message-input {
-            flex-grow: 1;
-            padding: 1rem;
-            background: var(--input-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            outline: none;
-            transition: all var(--transition-speed) ease;
-            caret-color: #ffc878;
-        }
-        
-        .message-input::placeholder {
-            color: var(--text-secondary);
-        }
-        
-        .message-input:focus {
-            border-color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .chat-input-area button {
-            background: var(--secondary-gradient);
-            border: none;
-            padding: 1rem;
-            border-radius: 12px;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            color: #4a2d64;
-            cursor: pointer;
-            transition: all var(--transition-speed) ease;
-            margin-left: 0.75rem;
-            box-shadow: var(--shadow-secondary);
-        }
-        
-        .chat-input-area button:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        /* Message Bubbles */
         .message-bubble {
             display: flex;
             flex-direction: column;
+            align-items: flex-start;
         }
-
+        
         .message-bubble.sent {
             align-items: flex-end;
         }
-
-        .message-bubble.received {
-            align-items: flex-start;
-        }
-
+        
         .message-content {
             padding: 0.75rem 1.25rem;
             border-radius: 18px;
-            max-width: 70%;
+            max-width: 75%;
             word-wrap: break-word;
             font-size: 0.95rem;
+            position: relative;
         }
-
+        
         .message-bubble.sent .message-content {
-            background: var(--secondary-gradient);
-            color: #4a2d64;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            background: var(--genshin-purple);
+            border: 1px solid var(--genshin-border);
         }
-
+        
         .message-bubble.received .message-content {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            background: var(--genshin-blue);
+            border: 1px solid var(--genshin-border);
         }
         
         .message-bubble .username {
             font-size: 0.8rem;
             font-weight: 500;
-            color: var(--text-secondary);
+            color: var(--genshin-gold);
             margin-bottom: 0.25rem;
-            padding-left: 0.5rem;
         }
         
         .message-bubble.sent .username {
@@ -325,42 +235,87 @@
         .system-message {
             text-align: center;
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--genshin-text-secondary);
             font-style: italic;
         }
         
-        .file-upload-btn {
-            background: var(--glass-bg-darker);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
+        .typing-indicator {
+            font-size: 0.8rem;
+            color: var(--genshin-text-secondary);
+            margin: 0 1rem 0.5rem;
+            height: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .typing-indicator.visible {
+            opacity: 1;
+        }
+
+        /* Input Area */
+        .chat-input-area {
+            display: flex;
+            align-items: center;
             padding: 1rem;
-            border-radius: 12px;
+            border-top: 1px solid var(--genshin-border);
+            background: var(--genshin-dark);
+        }
+        
+        .message-input {
+            flex-grow: 1;
+            padding: 1rem;
+            background: var(--genshin-blue);
+            border: 1px solid var(--genshin-border);
+            border-radius: 8px;
+            color: var(--genshin-text-primary);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .message-input::placeholder {
+            color: var(--genshin-text-secondary);
+        }
+        
+        .message-input:focus {
+            border-color: var(--genshin-gold);
+            box-shadow: 0 0 5px var(--genshin-gold-light);
+        }
+        
+        .send-btn, .file-upload-btn {
+            background: var(--genshin-gold);
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
             width: 50px;
             height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.1rem;
+            color: var(--genshin-dark);
             cursor: pointer;
-            transition: all var(--transition-speed) ease;
+            transition: all 0.3s ease;
+            margin-left: 0.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         
-        .file-upload-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        .send-btn:hover, .file-upload-btn:hover {
+            background: var(--genshin-gold-light);
+            transform: translateY(-2px);
         }
 
-        /* Sidebar */
+        /* Sidebar for Users */
         .sidebar {
             width: 300px;
-            background: var(--glass-bg-darker);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
+            padding: 1rem;
+            border-left: 1px solid var(--genshin-border);
             display: none;
             flex-direction: column;
+            background: var(--genshin-dark-light);
+            box-shadow: -4px 0 8px rgba(0, 0, 0, 0.3);
         }
-
+        
         @media (min-width: 768px) {
             .sidebar {
                 display: flex;
@@ -370,17 +325,15 @@
         .sidebar-section {
             padding-bottom: 1rem;
             margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--genshin-border);
         }
         
         .sidebar h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            padding-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 400;
+            font-size: 1.2rem;
+            color: var(--genshin-gold-light);
+            margin-bottom: 0.5rem;
         }
         
         .user-list {
@@ -398,7 +351,7 @@
 
         .user-list li {
             font-size: 0.95rem;
-            color: var(--text-secondary);
+            color: var(--genshin-text-secondary);
             padding: 0.5rem 0;
             display: flex;
             align-items: center;
@@ -409,66 +362,69 @@
             margin-right: 0.5rem;
         }
         
-        .typing-indicator {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 0.5rem;
-            height: 1.2rem;
-            opacity: 0;
-            transition: opacity var(--transition-speed) ease;
-        }
-        
-        .typing-indicator.visible {
-            opacity: 1;
-        }
-
         /* Modals */
         .modal {
-          display: none;
-          position: fixed;
-          z-index: 1000;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(10px);
-          opacity: 0;
-          transition: opacity var(--transition-speed) ease;
-          justify-content: center;
-          align-items: center;
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            justify-content: center;
+            align-items: center;
         }
 
         .modal.show {
-          display: flex;
-          opacity: 1;
+            display: flex;
         }
 
         .modal-content {
-          position: relative;
-          background: var(--glass-bg);
-          backdrop-filter: blur(20px);
-          border: 1px solid var(--glass-border);
-          padding: 2rem;
-          width: 90%;
-          max-width: 500px;
-          border-radius: 20px;
-          color: var(--text-primary);
-          animation: modalSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          text-align: center;
-          box-shadow: var(--shadow-primary);
-        }
-
-        @keyframes modalSlideIn {
-          from { opacity: 0; transform: translateY(-30px) scale(0.9); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+            background: var(--genshin-dark);
+            border: 2px solid var(--genshin-gold);
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 16px;
+            color: var(--genshin-text-primary);
+            box-shadow: 0 0 20px rgba(226, 185, 91, 0.3);
+            text-align: center;
+            position: relative;
         }
         
-        .call-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
+        .modal-content h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--genshin-gold-light);
+            margin-bottom: 1rem;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            background: var(--genshin-blue);
+            border: 1px solid var(--genshin-border);
+            border-radius: 8px;
+            color: var(--genshin-text-primary);
+            font-size: 1rem;
+        }
+        
+        .modal-button {
+            background: var(--genshin-gold);
+            color: var(--genshin-dark);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-button:hover {
+            background: var(--genshin-gold-light);
+            transform: scale(1.05);
         }
 
         .call-videos {
@@ -479,18 +435,11 @@
             height: 100%;
         }
 
-        @media (min-width: 768px) {
-            .call-videos {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
         .call-video {
             width: 100%;
             border-radius: 12px;
             background: #000;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: var(--shadow-secondary);
+            border: 1px solid var(--genshin-gold);
         }
 
         .call-actions {
@@ -501,9 +450,9 @@
         }
 
         .call-actions button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: var(--text-primary);
+            background: var(--genshin-blue);
+            border: 1px solid var(--genshin-border);
+            color: var(--genshin-gold);
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -512,47 +461,43 @@
             align-items: center;
             font-size: 1.5rem;
             cursor: pointer;
-            transition: all var(--transition-speed) ease;
+            transition: all 0.3s ease;
         }
 
         .call-actions button:hover {
             transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 10px var(--genshin-gold-light);
         }
 
         .call-actions button.hangup {
             background: #ef4444;
+            color: white;
             border-color: #fca5a5;
         }
         
         .call-actions button.hangup:hover {
             background: #dc2626;
         }
-
-        .message-link {
-          color: #ffc878;
-          text-decoration: underline;
-          transition: color var(--transition-speed) ease;
-        }
-
-        .message-link:hover {
-          color: #ffe6bd;
-        }
-        
     </style>
 </head>
 <body>
-    <div class="background-animation">
-        <div class="floating-shape"></div>
-        <div class="floating-shape"></div>
-        <div class="floating-shape"></div>
-    </div>
-    <div class="particles" id="particles"></div>
+    <div class="background-particles" id="particles"></div>
 
-    <div class="chat-container">
-        <!-- Main Chat Content -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal show">
+        <div class="modal-content">
+            <h3>Enter Teyvat</h3>
+            <input type="text" id="usernameInput" class="modal-input" placeholder="Your Name">
+            <input type="text" id="roomInput" class="modal-input" placeholder="Room Name">
+            <button id="loginBtn" class="modal-button">Join Chat</button>
+        </div>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="chat-container" id="chatContainer" style="display: none;">
+        <!-- Header -->
         <div class="chat-header">
-            <h1 class="chat-header-title"><i class="fas fa-gem"></i><span id="roomName"></span></h1>
+            <h1 class="chat-header-title" id="roomName"></h1>
             <div class="chat-actions">
                 <button id="videoCallBtn" title="Start Video Call"><i class="fas fa-video"></i></button>
                 <button id="audioCallBtn" title="Start Audio Call"><i class="fas fa-phone"></i></button>
@@ -560,6 +505,7 @@
             </div>
         </div>
         
+        <!-- Main Chat and Sidebar -->
         <div class="chat-main">
             <div class="chat-messages" id="messages">
                 <!-- Messages will be injected here -->
@@ -567,25 +513,26 @@
             
             <div class="sidebar">
                 <div class="sidebar-section">
-                    <h3>Your Profile</h3>
-                    <p style="font-size: 0.95rem; color: var(--text-secondary);"><i class="fas fa-user-circle"></i> <span id="userDisplayName"></span></p>
+                    <h3>Your Traveler</h3>
+                    <p style="font-size: 0.95rem; color: var(--genshin-text-secondary);"><i class="fas fa-user-circle"></i> <span id="userDisplayName"></span></p>
                 </div>
-                <h3>Users Online <span id="userCount">0</span></h3>
+                <h3>Adventurers Online <span id="userCount">0</span></h3>
                 <ul class="user-list" id="userList"></ul>
             </div>
         </div>
 
         <div class="typing-indicator" id="typingIndicator"></div>
 
+        <!-- Input Area -->
         <div class="chat-input-area">
             <label for="fileInput" class="file-upload-btn">
                 <i class="fas fa-paperclip"></i>
             </label>
             <input type="file" id="fileInput" style="display: none;">
             
-            <input type="text" id="messageInput" class="message-input" placeholder="Say something...">
+            <input type="text" id="messageInput" class="message-input" placeholder="What's your next adventure?">
             
-            <button id="sendBtn" title="Send Message">
+            <button id="sendBtn" class="send-btn" title="Send Message">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
@@ -595,7 +542,7 @@
     <div id="callModal" class="modal">
         <div class="modal-content">
             <div class="call-content">
-                <h3 id="callStatus" style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">Connecting...</h3>
+                <h3 id="callStatus" style="font-size: 1.5rem; font-weight: 600; color: var(--genshin-text-primary);">Connecting...</h3>
                 <div class="call-videos">
                     <video id="localVideo" class="call-video" autoplay muted playsinline></video>
                     <video id="remoteVideo" class="call-video" autoplay playsinline></video>
@@ -609,29 +556,28 @@
 
     <div id="incomingCallModal" class="modal">
         <div class="modal-content">
-            <h3 id="incomingCaller" style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);"></h3>
-            <p style="color: var(--text-secondary); margin-top: 0.5rem; margin-bottom: 2rem;">is calling you...</p>
+            <h3 id="incomingCaller"></h3>
+            <p style="color: var(--genshin-text-secondary); margin-top: 0.5rem; margin-bottom: 2rem;">is calling you...</p>
             <div class="call-actions">
-                <button id="acceptCallBtn" title="Accept Call" style="background: #10b981; border-color: #34d399;"><i class="fas fa-phone"></i></button>
+                <button id="acceptCallBtn" title="Accept Call"><i class="fas fa-phone"></i></button>
                 <button id="rejectCallBtn" class="hangup" title="Reject Call"><i class="fas fa-phone-slash"></i></button>
             </div>
         </div>
     </div>
-
-    <div id="customAlert" class="modal">
-        <div class="modal-content">
-            <p id="alertMessage" style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem;"></p>
-            <button id="alertCloseBtn" style="background: var(--primary-gradient); border-color: var(--glass-border); color: var(--text-primary); border-radius: 10px; padding: 0.7rem 1.4rem; cursor: pointer; transition: all var(--transition-speed) ease;">OK</button>
-        </div>
-    </div>
     
     <script>
-        // Generate floating particles
+        // NOTE: The Python server-side logic from the original file cannot be included in a client-side HTML file.
+        // This file contains the complete client-side application logic.
+        
+        // Background particles generation
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
             for (let i = 0; i < 30; i++) {
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
+                const size = 10 + Math.random() * 40;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
                 particle.style.left = Math.random() * 100 + '%';
                 particle.style.animationDelay = Math.random() * 15 + 's';
                 particle.style.animationDuration = (10 + Math.random() * 10) + 's';
@@ -641,6 +587,11 @@
         createParticles();
 
         // DOM Elements
+        const loginModal = document.getElementById('loginModal');
+        const usernameInput = document.getElementById('usernameInput');
+        const roomInput = document.getElementById('roomInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const chatContainer = document.getElementById('chatContainer');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const messagesDiv = document.getElementById('messages');
@@ -665,14 +616,9 @@
         const callStatus = document.getElementById('callStatus');
         const incomingCaller = document.getElementById('incomingCaller');
 
-        // Custom Alert Elements
-        const customAlertModal = document.getElementById('customAlert');
-        const alertMessageEl = document.getElementById('alertMessage');
-        const alertCloseBtn = document.getElementById('alertCloseBtn');
-
         // State Variables
-        const username = sessionStorage.getItem('chat_username');
-        const room = sessionStorage.getItem('chat_room');
+        let username = '';
+        let room = '';
         let typingTimeout = null;
         let peerConnection = null;
         let localStream = null;
@@ -681,101 +627,120 @@
         const configuration = {
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         };
+        let socket;
 
-        if (!username || !room) {
-            window.location.href = '/';
-        }
+        // --- Login Logic ---
+        loginBtn.addEventListener('click', () => {
+            username = usernameInput.value.trim();
+            room = roomInput.value.trim();
+            if (username && room) {
+                loginModal.style.display = 'none';
+                chatContainer.style.display = 'flex';
+                roomNameEl.textContent = room;
+                userDisplayNameEl.textContent = username;
+                
+                // Initialize Socket.IO connection
+                socket = io();
+                
+                // Set up event listeners after connecting
+                socket.on('connect', () => {
+                    console.log('Connected to server');
+                    socket.emit('join', { username, room });
+                });
 
-        roomNameEl.textContent = room;
-        userDisplayNameEl.textContent = username;
-        const socket = io();
+                socket.on('message', (data) => {
+                    appendMessage(data.username, data.message);
+                });
 
-        // --- SocketIO Event Handlers ---
-        socket.on('connect', () => {
-            console.log('Connected to server');
-            socket.emit('join', { username, room });
-        });
+                socket.on('update_user_list', (data) => {
+                    updateUserList(data.users);
+                });
 
-        socket.on('message', (data) => {
-            appendMessage(data.username, data.message, data.timestamp);
-        });
+                socket.on('typing', (data) => {
+                    if (data.username !== username) {
+                        typingIndicator.textContent = `${data.username} is typing...`;
+                        typingIndicator.classList.add('visible');
+                        clearTimeout(typingTimeout);
+                        typingTimeout = setTimeout(() => {
+                            typingIndicator.classList.remove('visible');
+                        }, 3000);
+                    }
+                });
+                
+                // WebRTC Signaling Handlers
+                socket.on('offer', async (data) => {
+                    if (callActive) {
+                        socket.emit('reject-call', { room, username });
+                        return;
+                    }
+                    isCaller = false;
+                    incomingCaller.textContent = data.username;
+                    incomingCallModal.classList.add('show');
+                    
+                    peerConnection = new RTCPeerConnection(configuration);
+                    peerConnection.onicecandidate = handleIceCandidate;
+                    peerConnection.ontrack = handleRemoteStream;
+                    
+                    try {
+                        localStream = await navigator.mediaDevices.getUserMedia({ video: data.video, audio: true });
+                        localVideo.srcObject = localStream;
+                        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    } catch (error) {
+                        console.error("Error getting media or setting remote description:", error);
+                        rejectCall();
+                    }
+                });
+                
+                socket.on('answer', async (data) => {
+                    console.log("Received answer:", data.answer);
+                    try {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    } catch (error) {
+                        console.error("Error setting remote description:", error);
+                    }
+                });
+                
+                socket.on('ice-candidate', async (data) => {
+                    try {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    } catch (error) {
+                        console.error("Error adding received ICE candidate:", error);
+                    }
+                });
 
-        socket.on('update_user_list', (data) => {
-            updateUserList(data.users);
-        });
+                socket.on('call-rejected', (data) => {
+                    if (isCaller) {
+                        endCall();
+                        showCustomAlert(`${data.username} rejected your call.`);
+                    }
+                });
 
-        socket.on('typing', (data) => {
-            if (data.username !== username) {
-                typingIndicator.textContent = `${data.username} is typing...`;
-                typingIndicator.classList.add('visible');
-                clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => {
-                    typingIndicator.classList.remove('visible');
-                }, 3000);
+                socket.on('call-ended', (data) => {
+                    endCall();
+                    appendMessage("System", "Call ended.");
+                });
+                
+            } else {
+                showCustomAlert("Please enter both a name and a room.");
             }
         });
 
-        socket.on('offer', async (data) => {
-            if (callActive) {
-                socket.emit('reject-call', { room, username });
-                return;
-            }
-            isCaller = false;
-            incomingCaller.textContent = data.username;
-            incomingCallModal.classList.add('show');
-            
-            peerConnection = new RTCPeerConnection(configuration);
-            peerConnection.onicecandidate = handleIceCandidate;
-            peerConnection.ontrack = handleRemoteStream;
-            
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: data.video, audio: true });
-                localVideo.srcObject = localStream;
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-            } catch (error) {
-                console.error("Error getting media or setting remote description:", error);
-                rejectCall();
-            }
-        });
-        
-        socket.on('answer', async (data) => {
-            console.log("Received answer:", data.answer);
-            try {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            } catch (error) {
-                console.error("Error setting remote description:", error);
-            }
-        });
-        
-        socket.on('ice-candidate', async (data) => {
-            try {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-            } catch (error) {
-                console.error("Error adding received ICE candidate:", error);
-            }
-        });
-
-        socket.on('call-rejected', (data) => {
-            if (isCaller) {
-                endCall();
-                showCustomAlert(`${data.username} rejected your call.`);
-            }
-        });
-
-        socket.on('call-ended', (data) => {
-            endCall();
-            appendMessage("System", "Call ended.");
-        });
-        
         // --- UI & Message Handling ---
         function showCustomAlert(message) {
-            alertMessageEl.textContent = message;
-            customAlertModal.classList.add('show');
-            alertCloseBtn.onclick = () => customAlertModal.classList.remove('show');
+            const alertModal = document.createElement('div');
+            alertModal.classList.add('modal');
+            alertModal.innerHTML = `
+                <div class="modal-content">
+                    <p style="font-size: 1.1rem; color: var(--genshin-text-primary); margin-bottom: 1rem;">${message}</p>
+                    <button class="modal-button" onclick="this.parentElement.parentElement.remove();">OK</button>
+                </div>
+            `;
+            document.body.appendChild(alertModal);
+            setTimeout(() => alertModal.classList.add('show'), 10);
         }
 
-        function appendMessage(sender, text, timestamp) {
+        function appendMessage(sender, text) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message-bubble');
             const isSelf = sender === username;
@@ -818,7 +783,7 @@
                 e.preventDefault();
                 sendMessage();
             } else {
-                socket.emit('typing', { username, room });
+                if (socket) socket.emit('typing', { username, room });
             }
         });
 
@@ -826,7 +791,7 @@
         
         function sendMessage() {
             const message = messageInput.value.trim();
-            if (message) {
+            if (message && socket) {
                 socket.emit('message', { message });
                 messageInput.value = '';
                 typingIndicator.classList.remove('visible');
@@ -835,34 +800,16 @@
         }
         
         leaveBtn.addEventListener('click', () => {
-            socket.emit('leave', { username, room });
-            window.location.href = '/';
+            if (socket) socket.emit('leave', { username, room });
+            window.location.reload();
         });
 
         fileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    const message = `Uploaded file: <a href="${data.url}" target="_blank" download class="message-link">${data.original_name}</a> (${(data.size / 1024 / 1024).toFixed(2)} MB)`;
-                    socket.emit('message', { message });
-                } else {
-                    appendMessage("System", `File upload failed: ${data.error}`);
-                }
-            } catch (error) {
-                appendMessage("System", "File upload failed.");
-                console.error("Upload error:", error);
-            }
-            fileInput.value = '';
+            // Note: File upload requires a backend server. This client-side code
+            // will not function without the corresponding server-side logic.
+            appendMessage("System", "File upload functionality requires a server. This is a client-side only demo.");
         });
 
         // --- WebRTC Logic ---
@@ -871,13 +818,17 @@
         acceptCallBtn.addEventListener('click', acceptCall);
         rejectCallBtn.addEventListener('click', rejectCall);
         hangUpBtn.addEventListener('click', () => {
-            socket.emit('call-ended', { room, username });
+            if(socket) socket.emit('call-ended', { room, username });
             endCall();
         });
 
         async function startCall(video) {
             if (callActive) {
                 showCustomAlert("You are already in a call.");
+                return;
+            }
+            if(!socket) {
+                showCustomAlert("Please join a room first.");
                 return;
             }
             isCaller = true;
@@ -914,7 +865,7 @@
             try {
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
-                socket.emit('answer', { room, answer: peerConnection.localDescription });
+                if(socket) socket.emit('answer', { room, answer: peerConnection.localDescription });
                 console.log("Sent answer:", peerConnection.localDescription);
             } catch (error) {
                 console.error("Error creating answer:", error);
@@ -923,12 +874,12 @@
         }
 
         function rejectCall() {
-            socket.emit('reject-call', { room, username });
+            if(socket) socket.emit('reject-call', { room, username });
             endCall();
         }
 
         function handleIceCandidate(event) {
-            if (event.candidate) {
+            if (event.candidate && socket) {
                 socket.emit('ice-candidate', { room, candidate: event.candidate });
             }
         }
@@ -958,7 +909,9 @@
 
         // --- Window event listeners ---
         window.addEventListener('beforeunload', () => {
-            socket.emit('leave', { username, room });
+            if (socket) {
+                socket.emit('leave', { username, room });
+            }
             endCall();
         });
     </script>
