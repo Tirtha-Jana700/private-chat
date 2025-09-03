@@ -5,23 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Chat Room</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
+        /* Custom Properties for a Genshin-inspired Theme */
         :root {
-          --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-          --glass-bg: rgba(255, 255, 255, 0.1);
-          --glass-border: rgba(255, 255, 255, 0.2);
-          --glass-bg-darker: rgba(0, 0, 0, 0.2);
-          --text-primary: #ffffff;
-          --text-secondary: rgba(255, 255, 255, 0.8);
-          --input-bg: rgba(255, 255, 255, 0.15);
-          --button-hover: rgba(255, 255, 255, 0.1);
-          --shadow-primary: 0 20px 40px rgba(0, 0, 0, 0.3);
-          --shadow-secondary: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --primary-gradient: linear-gradient(145deg, #7c5a96 0%, #4a2d64 100%);
+            --secondary-gradient: linear-gradient(45deg, #ffc878 0%, #ffa565 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-bg-darker: rgba(0, 0, 0, 0.15);
+            --text-primary: #f0f0f0;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --input-bg: rgba(255, 255, 255, 0.12);
+            --shadow-primary: 0 20px 40px rgba(0, 0, 0, 0.4);
+            --shadow-secondary: 0 8px 24px rgba(0, 0, 0, 0.3);
+            --transition-speed: 0.3s;
         }
 
+        /* General & Layout */
         * {
             margin: 0;
             padding: 0;
@@ -32,10 +34,10 @@
             height: 100%;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
+            background: var(--primary-gradient);
         }
 
         body {
-            background: var(--primary-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -43,6 +45,7 @@
             position: relative;
         }
 
+        /* Background Effects */
         .background-animation {
             position: fixed;
             top: 0;
@@ -57,7 +60,8 @@
             position: absolute;
             background: var(--secondary-gradient);
             border-radius: 50%;
-            opacity: 0.1;
+            filter: blur(80px);
+            opacity: 0.15;
             animation: float 20s infinite ease-in-out;
         }
 
@@ -112,18 +116,19 @@
 
         @keyframes particleFloat {
             0% { transform: translateY(100vh) scale(0); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+            10% { opacity: 1; transform: scale(1); }
+            90% { opacity: 1; transform: scale(1); }
+            100% { transform: translateY(-10vh) scale(0); opacity: 0; }
         }
 
+        /* Main Chat Container */
         .chat-container {
             backdrop-filter: blur(20px);
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
             padding: 1.5rem;
-            width: 100%;
+            width: 95%;
             max-width: 1200px;
             height: 90vh;
             margin: 0 1rem;
@@ -132,7 +137,7 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            animation: slideIn 0.8s ease-out;
+            animation: slideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         @keyframes slideIn {
@@ -140,6 +145,7 @@
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
+        /* Header */
         .chat-header {
             display: flex;
             justify-content: space-between;
@@ -150,11 +156,18 @@
         }
 
         .chat-header-title {
-            font-size: 1.5rem;
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
             font-weight: 700;
             color: var(--text-primary);
             display: flex;
             align-items: center;
+            letter-spacing: 1px;
+        }
+
+        .chat-header-title i {
+            margin-right: 0.75rem;
+            color: #ffc878;
         }
 
         .chat-actions button {
@@ -169,17 +182,18 @@
             align-items: center;
             justify-content: center;
             font-size: 1.1rem;
-            transition: all 0.3s ease;
+            transition: all var(--transition-speed) ease;
             cursor: pointer;
             margin-left: 0.5rem;
         }
         
         .chat-actions button:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+            transform: translateY(-3px) scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        /* Main Body & Sidebar */
         .chat-main {
             display: flex;
             flex-grow: 1;
@@ -208,6 +222,7 @@
             display: none;
         }
 
+        /* Input Area */
         .chat-input-area {
             display: flex;
             align-items: center;
@@ -224,7 +239,8 @@
             color: var(--text-primary);
             font-size: 1rem;
             outline: none;
-            transition: all 0.3s ease;
+            transition: all var(--transition-speed) ease;
+            caret-color: #ffc878;
         }
         
         .message-input::placeholder {
@@ -247,17 +263,19 @@
             align-items: center;
             justify-content: center;
             font-size: 1.1rem;
-            color: var(--text-primary);
+            color: #4a2d64;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-left: 0.5rem;
+            transition: all var(--transition-speed) ease;
+            margin-left: 0.75rem;
+            box-shadow: var(--shadow-secondary);
         }
         
         .chat-input-area button:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-secondary);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
+        /* Message Bubbles */
         .message-bubble {
             display: flex;
             flex-direction: column;
@@ -281,13 +299,15 @@
 
         .message-bubble.sent .message-content {
             background: var(--secondary-gradient);
-            color: var(--text-primary);
+            color: #4a2d64;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .message-bubble.received .message-content {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             color: var(--text-primary);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
         
         .message-bubble .username {
@@ -295,6 +315,7 @@
             font-weight: 500;
             color: var(--text-secondary);
             margin-bottom: 0.25rem;
+            padding-left: 0.5rem;
         }
         
         .message-bubble.sent .username {
@@ -321,15 +342,16 @@
             justify-content: center;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all var(--transition-speed) ease;
         }
         
         .file-upload-btn:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+            transform: translateY(-3px) scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        /* Sidebar */
         .sidebar {
             width: 300px;
             background: var(--glass-bg-darker);
@@ -393,13 +415,14 @@
             margin-top: 0.5rem;
             height: 1.2rem;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity var(--transition-speed) ease;
         }
         
         .typing-indicator.visible {
             opacity: 1;
         }
 
+        /* Modals */
         .modal {
           display: none;
           position: fixed;
@@ -411,7 +434,7 @@
           background: rgba(0, 0, 0, 0.8);
           backdrop-filter: blur(10px);
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity var(--transition-speed) ease;
           justify-content: center;
           align-items: center;
         }
@@ -431,8 +454,9 @@
           max-width: 500px;
           border-radius: 20px;
           color: var(--text-primary);
-          animation: modalSlideIn 0.4s ease-out;
+          animation: modalSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           text-align: center;
+          box-shadow: var(--shadow-primary);
         }
 
         @keyframes modalSlideIn {
@@ -444,7 +468,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
+            gap: 1.5rem;
         }
 
         .call-videos {
@@ -488,7 +512,7 @@
             align-items: center;
             font-size: 1.5rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all var(--transition-speed) ease;
         }
 
         .call-actions button:hover {
@@ -506,13 +530,13 @@
         }
 
         .message-link {
-          color: #93c5fd;
+          color: #ffc878;
           text-decoration: underline;
-          transition: color 0.3s ease;
+          transition: color var(--transition-speed) ease;
         }
 
         .message-link:hover {
-          color: #d1d5db;
+          color: #ffe6bd;
         }
         
     </style>
@@ -528,7 +552,7 @@
     <div class="chat-container">
         <!-- Main Chat Content -->
         <div class="chat-header">
-            <h1 class="chat-header-title" id="roomName"></h1>
+            <h1 class="chat-header-title"><i class="fas fa-gem"></i><span id="roomName"></span></h1>
             <div class="chat-actions">
                 <button id="videoCallBtn" title="Start Video Call"><i class="fas fa-video"></i></button>
                 <button id="audioCallBtn" title="Start Audio Call"><i class="fas fa-phone"></i></button>
@@ -557,7 +581,7 @@
             <label for="fileInput" class="file-upload-btn">
                 <i class="fas fa-paperclip"></i>
             </label>
-            <input type="file" id="fileInput" class="hidden">
+            <input type="file" id="fileInput" style="display: none;">
             
             <input type="text" id="messageInput" class="message-input" placeholder="Say something...">
             
@@ -591,6 +615,13 @@
                 <button id="acceptCallBtn" title="Accept Call" style="background: #10b981; border-color: #34d399;"><i class="fas fa-phone"></i></button>
                 <button id="rejectCallBtn" class="hangup" title="Reject Call"><i class="fas fa-phone-slash"></i></button>
             </div>
+        </div>
+    </div>
+
+    <div id="customAlert" class="modal">
+        <div class="modal-content">
+            <p id="alertMessage" style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem;"></p>
+            <button id="alertCloseBtn" style="background: var(--primary-gradient); border-color: var(--glass-border); color: var(--text-primary); border-radius: 10px; padding: 0.7rem 1.4rem; cursor: pointer; transition: all var(--transition-speed) ease;">OK</button>
         </div>
     </div>
     
@@ -633,6 +664,11 @@
         const remoteVideo = document.getElementById('remoteVideo');
         const callStatus = document.getElementById('callStatus');
         const incomingCaller = document.getElementById('incomingCaller');
+
+        // Custom Alert Elements
+        const customAlertModal = document.getElementById('customAlert');
+        const alertMessageEl = document.getElementById('alertMessage');
+        const alertCloseBtn = document.getElementById('alertCloseBtn');
 
         // State Variables
         const username = sessionStorage.getItem('chat_username');
@@ -734,16 +770,9 @@
         
         // --- UI & Message Handling ---
         function showCustomAlert(message) {
-            const alertModal = document.createElement('div');
-            alertModal.classList.add('modal');
-            alertModal.innerHTML = `
-                <div class="modal-content">
-                    <p style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem;">${message}</p>
-                    <button class="modal-close" style="background: #667eea; border-color: #764ba2; color: white; border-radius: 10px; padding: 0.7rem 1.4rem; cursor: pointer;" onclick="this.parentElement.parentElement.remove();">OK</button>
-                </div>
-            `;
-            document.body.appendChild(alertModal);
-            setTimeout(() => alertModal.classList.add('show'), 10);
+            alertMessageEl.textContent = message;
+            customAlertModal.classList.add('show');
+            alertCloseBtn.onclick = () => customAlertModal.classList.remove('show');
         }
 
         function appendMessage(sender, text, timestamp) {
