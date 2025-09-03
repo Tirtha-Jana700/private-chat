@@ -130,6 +130,8 @@ def handle_leave(data):
         
         last_disconnect[username] = time.time()
         emit("message", {"username": "System", "message": f"🚪 {username} left the chat"}, room=room)
+        
+        # ✅ Added: Emit the updated user list after a user leaves
         emit_user_list(room)
 
     except Exception as e:
@@ -153,6 +155,8 @@ def handle_disconnect():
         
         last_disconnect[username] = time.time()
         emit("message", {"username": "System", "message": f"🚪 {username} disconnected"}, room=room)
+        
+        # ✅ Added: Emit the updated user list after a user disconnects
         emit_user_list(room)
 
     except Exception as e:
