@@ -186,8 +186,7 @@ body {
       <h2>🌸 Welcome to My Private Chat</h2>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </div>
-   <!-- 👥 Online Info -->
-     <div id="onlineInfo" style="margin: 10px 0;">
+   <div id="onlineInfo" style="margin: 10px 0;">
        <strong>🟢 Online: <span id="onlineCount">0</span></strong>
        <details style="margin-top: 6px;">
          <summary style="cursor: pointer; color: #ccc; font-size: 0.95rem;">Show Online Users</summary>
@@ -202,7 +201,6 @@ body {
       <label for="file"><i class="fas fa-paperclip"></i></label>
       <input type="file" id="file" onchange="sendFile()" />
     </div>
-    <!-- 📞 CALL START BUTTONS -->
     <div style="margin-top: 12px;">
       <button onclick="startCall(false)" title="Voice Call">
         <i class="fas fa-phone"></i>
@@ -211,8 +209,7 @@ body {
         <i class="fas fa-video"></i>
       </button>
     </div>
-   <!-- Upload Progress Bar -->
-  <div id="progressContainer" style="display: none; margin-top: 12px;">
+   <div id="progressContainer" style="display: none; margin-top: 12px;">
     <div style="
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
@@ -255,8 +252,7 @@ body {
   ">Cancel Upload</button>
    </div>
 
-  <!-- 📞 CALL CONTROL UI -->
-   <div id="callControls" style="display:none; justify-content:center; gap:12px; margin-top:14px;">
+  <div id="callControls" style="display:none; justify-content:center; gap:12px; margin-top:14px;">
      <button onclick="toggleMute()" title="Mute/Unmute">
        <i id="micIcon" class="fas fa-microphone"></i>
      </button>
@@ -268,13 +264,11 @@ body {
      </button>
    </div>
 
-   <!-- 🎥 VIDEO UI -->
    <div id="videoArea" style="display:none; position:relative; margin-top:10px;">
      <video id="remoteVideo" autoplay playsinline style="width:100%; border-radius:12px;"></video>
      <video id="localVideo" muted autoplay playsinline style="width:120px; height:90px; position:absolute; bottom:10px; right:10px; border-radius:8px; box-shadow:0 0 15px rgba(0,255,255,0.5);"></video>
    </div>
 
-   <!-- 🔔 INCOMING CALL POPUP -->
    <div id="incomingCall" style="display:none; position:fixed; top: 20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:10px; z-index:999; box-shadow: 0 0 20px rgba(0,255,255,0.5);">
      <p id="callerInfo" style="margin-bottom:10px; font-weight:bold;">Incoming Call...</p>
      <button onclick="acceptCall()" title="Accept Call"><i class="fas fa-phone"></i></button>
@@ -318,6 +312,9 @@ socket.on("message", data => {
 
   const msg = data.message;
   let formattedMessage = "";
+  
+  // ✅ Check if the message is from the current user
+  const sender = data.username === username ? "You" : data.username;
 
   // 🔍 Detect image
   if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
@@ -345,7 +342,7 @@ socket.on("message", data => {
   }
 
   div.innerHTML = `
-    <strong>${data.username}</strong>:
+    <strong>${sender}</strong>:
     <div style="
       background: rgba(255, 255, 255, 0.08);
       padding: 10px 12px;
@@ -370,8 +367,12 @@ socket.on("message", data => {
     const div = document.createElement("div");
     div.className = "msg";
     div.style.wordWrap = "break-word";
+    
+    // ✅ Check if the file is from the current user
+    const sender = username === localStorage.getItem("chat_username") ? "You" : username;
+
     div.innerHTML = `
-      <strong>${username}</strong>:
+      <strong>${sender}</strong>:
       <div style="
         background: rgba(255, 255, 255, 0.08);
         padding: 10px 12px;
