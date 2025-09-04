@@ -102,8 +102,19 @@ def handle_join(data):
         last = last_disconnect.get(username, 0)
         rejoined = now - last <= 5
 
-        msg = f"🔄 {username} reconnected" if rejoined else f"✅ {username} joined the chat"
-        emit("message", {"username": "System", "message": msg}, room=room)
+        # Send personalized message to the joining user
+        if rejoined:
+            emit("message", {"username": "System", "message": "🔄 You reconnected to the chat"})
+        else:
+            emit("message", {"username": "System", "message": "✅ You joined the chat"})
+
+        # Send message to others in the room
+        if rejoined:
+            msg = f"🔄 {username} reconnected"
+        else:
+            msg = f"✅ {username} joined the chat"
+        
+        emit("message", {"username": "System", "message": msg}, room=room, include_self=False)
 
         if username in last_disconnect:
             del last_disconnect[username]
@@ -129,9 +140,13 @@ def handle_leave(data):
             del room_users[room][sid]
         
         last_disconnect[username] = time.time()
-        emit("message", {"username": "System", "message": f"🚪 {username} left the chat"}, room=room)
         
-        # ✅ Added: Emit the updated user list after a user leaves
+        # Send personalized message to the leaving user
+        emit("message", {"username": "System", "message": "🚪 You left the chat"})
+        
+        # Send message to others in the room
+        emit("message", {"username": "System", "message": f"🚪 {username} left the chat"}, room=room, include_self=False)
+        
         emit_user_list(room)
 
     except Exception as e:
@@ -154,21 +169,33 @@ def handle_disconnect():
         del user_sessions[sid]
         
         last_disconnect[username] = time.time()
+        
+        # Only send message to others (user already disconnected)
         emit("message", {"username": "System", "message": f"🚪 {username} disconnected"}, room=room)
         
-        # ✅ Added: Emit the updated user list after a user disconnects
         emit_user_list(room)
 
     except Exception as e:
         pass
 
 def emit_user_list(room):
-    """Emit updated user list to room"""
-    users = sorted(list(room_users[room].values()))
-    socketio.emit("update_user_list", {
-        "users": users,
-        "count": len(users)
-    }, room=room)
+    """Emit updated user list to each user in the room with personalized view"""
+    users = list(room_users[room].values())
+    
+    # Send personalized user lists to each user
+    for sid, username in room_users[room].items():
+        # Create a personalized list where the current user shows as "You"
+        personalized_users = []
+        for user in sorted(users):
+            if user == username:
+                personalized_users.append("You")
+            else:
+                personalized_users.append(user)
+        
+        socketio.emit("update_user_list", {
+            "users": personalized_users,
+            "count": len(users)
+        }, room=sid)  # Send to specific user
 
 @socketio.on("message")
 def handle_message(data):
