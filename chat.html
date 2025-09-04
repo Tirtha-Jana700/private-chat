@@ -275,6 +275,7 @@ body {
      <button onclick="rejectCall()" title="Reject Call" style="background:#ff4d4d;"><i class="fas fa-phone-slash"></i></button>
    </div>
   </div>
+
 <script>
   const socket = io();
   const username = localStorage.getItem("chat_username") || "Guest";
@@ -285,80 +286,108 @@ body {
 
   // 👥 Join the room
   socket.emit("join", { username, room });
- // 🟢 Update online user list and count
- socket.on("update_user_list",(data) => {
-   const userList = document.getElementById("userList");
-   const onlineCount = document.getElementById("onlineCount");
 
-   userList.innerHTML = "";
-   data.users.forEach(user => {
-     const li = document.createElement("li");
-     li.textContent = user;
-     userList.appendChild(li);
-   });
+  // 🟢 Update online user list and count (now handles personalized lists)
+  socket.on("update_user_list", (data) => {
+    const userList = document.getElementById("userList");
+    const onlineCount = document.getElementById("onlineCount");
 
-   onlineCount.textContent = data.count;
- });
+    userList.innerHTML = "";
+    
+    // The server now sends personalized user lists
+    data.users.forEach(user => {
+      const li = document.createElement("li");
+      li.textContent = user;
+      
+      // Style "You" differently
+      if (user === "You") {
+        li.style.fontWeight = "bold";
+        li.style.color = "#4dd0e1";
+      }
+      
+      userList.appendChild(li);
+    });
 
- // 🧼 Leave room on close
- window.addEventListener("beforeunload", () => {
-   socket.emit("leave", { username, room });
- });
+    onlineCount.textContent = data.count;
+  });
+
+  // 🧼 Leave room on close
+  window.addEventListener("beforeunload", () => {
+    socket.emit("leave", { username, room });
+  });
 
   // 💬 Handle incoming messages (with smart file rendering)
-socket.on("message", data => {
-  const div = document.createElement("div");
-  div.className = "msg";
+  socket.on("message", data => {
+    const div = document.createElement("div");
+    div.className = "msg";
 
-  const msg = data.message;
-  let formattedMessage = "";
-  
-  // ✅ Check if the message is from the current user
-  const sender = data.username === username ? "You" : data.username;
+    const msg = data.message;
+    let formattedMessage = "";
+    
+    // ✅ Check if the message is from the current user (but not system messages)
+    const sender = (data.username === username && data.username !== "System") ? "You" : data.username;
 
-  // 🔍 Detect image
-  if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
-    formattedMessage = `<img src="${msg}" style="max-width: 100%; border-radius: 12px;">`;
-  }
-  // 🔊 Detect audio
-  else if (msg.match(/\.(mp3|wav|ogg)$/i)) {
-    formattedMessage = `<audio controls style="width: 100%;"><source src="${msg}"></audio>`;
-  }
-  // 📁 Generic uploaded file
-  else if (msg.startsWith("http") && msg.match(/\/uploads\//)) {
-    const fileName = msg.split("/").pop();
-    formattedMessage = `📁 <a href="${msg}" download="${fileName}" rel="noopener noreferrer" class="shared-link">${fileName}</a>`;
-  }
-  // 🌐 Regular link
-  else if (msg.startsWith("http")) {
-    formattedMessage = `<a href="${msg}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
-  }
-  // 📝 Normal text
-  else {
-    formattedMessage = msg.replace(
-      /(https?:\/\/[^\s]+)/g,
-      (url) => `<a href="${url}" target="_blank" style="color:#74c0fc; text-decoration: underline;">${url}</a>`
-    );
-  }
+    // 🔍 Detect image
+    if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      formattedMessage = `<img src="${msg}" style="max-width: 100%; border-radius: 12px;">`;
+    }
+    // 🔊 Detect audio
+    else if (msg.match(/\.(mp3|wav|ogg)$/i)) {
+      formattedMessage = `<audio controls style="width: 100%;"><source src="${msg}"></audio>`;
+    }
+    // 📁 Generic uploaded file
+    else if (msg.startsWith("http") && msg.match(/\/uploads\//)) {
+      const fileName = msg.split("/").pop();
+      formattedMessage = `📁 <a href="${msg}" download="${fileName}" rel="noopener noreferrer" class="shared-link">${fileName}</a>`;
+    }
+    // 🌐 Regular link
+    else if (msg.startsWith("http")) {
+      formattedMessage = `<a href="${msg}" target="_blank" rel="noopener noreferrer" style="color:#74c0fc; text-decoration: underline;">${msg}</a>`;
+    }
+    // 📝 Normal text
+    else {
+      formattedMessage = msg.replace(
+        /(https?:\/\/[^\s]+)/g,
+        (url) => `<a href="${url}" target="_blank" style="color:#74c0fc; text-decoration: underline;">${url}</a>`
+      );
+    }
 
-  div.innerHTML = `
-    <strong>${sender}</strong>:
-    <div style="
-      background: rgba(255, 255, 255, 0.08);
-      padding: 10px 12px;
-      border-radius: 12px;
-      display: inline-block;
-      margin-top: 4px;
-      max-width: 80%;
-      word-wrap: break-word;
-    ">
-      ${formattedMessage}
-    </div>
-  `;
+    // Style system messages differently
+    if (data.username === "System") {
+      div.innerHTML = `
+        <div style="
+          text-align: center;
+          font-style: italic;
+          color: #a0a0a0;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 8px 12px;
+          border-radius: 12px;
+          margin: 8px 0;
+          font-size: 0.9rem;
+        ">
+          ${formattedMessage}
+        </div>
+      `;
+    } else {
+      div.innerHTML = `
+        <strong>${sender}</strong>:
+        <div style="
+          background: rgba(255, 255, 255, 0.08);
+          padding: 10px 12px;
+          border-radius: 12px;
+          display: inline-block;
+          margin-top: 4px;
+          max-width: 80%;
+          word-wrap: break-word;
+        ">
+          ${formattedMessage}
+        </div>
+      `;
+    }
 
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-});
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  });
 
   // 📂 Receive file inside bubble
   socket.on("file", ({ username, fileName, data }) => {
@@ -420,14 +449,15 @@ socket.on("message", data => {
   }
 
   // 🌗 Toggle day/night mode
-   function toggleTheme(){
+  function toggleTheme(){
     document.body.classList.toggle("dark-mode");
-   document.documentElement.classList.toggle("dark-mode"); // 🔥 adds dark mode to <html> too
+    document.documentElement.classList.toggle("dark-mode"); // 🔥 adds dark mode to <html> too
 
-      const icon =    document.getElementById("theme-icon");
-      icon.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+    const icon = document.getElementById("theme-icon");
+    icon.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
   }
 </script>
+
 <script>
 let currentUpload = null;
 
@@ -554,7 +584,7 @@ socket.on("offer", ({ offer, username: caller, video }) => {
   window.pendingOffer = offer;
   window.caller = caller;
 
-  // Only show the popup — don’t show video area or controls yet
+  // Only show the popup — don't show video area or controls yet
   document.getElementById("callerInfo").textContent = `${caller} is calling...`;
   document.getElementById("incomingCall").style.display = "block";
 });
@@ -704,6 +734,7 @@ socket.on("call-rejected", ({ username }) => {
     e.returnValue = '';           // ✅ Required for other browsers
   });
 </script>
+
 <script>
   // 🔒 Disable Right-Click
   document.addEventListener("contextmenu", e => e.preventDefault());
@@ -762,5 +793,6 @@ socket.on("call-rejected", ({ username }) => {
     }
   }, 1500);
 </script>
+
 </body>
 </html>
