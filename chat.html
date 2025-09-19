@@ -226,6 +226,48 @@
       font-size: 0.9rem;
     }
 
+    /* Image container with download button */
+    .image-container {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      margin-top: 8px;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .download-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      opacity: 0;
+    }
+
+    .image-container:hover .download-btn {
+      opacity: 1;
+    }
+
+    .download-btn:hover {
+      background: rgba(0, 0, 0, 0.9);
+      transform: scale(1.1);
+    }
+
     #typing {
       font-size: 0.85rem;
       color: #d1d1d1;
@@ -380,12 +422,18 @@
       width: 100px;
       height: 100px;
       margin: 0 auto 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .circular-progress svg {
       width: 100%;
       height: 100%;
       transform: rotate(-90deg);
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
     .circular-progress .bg-circle {
@@ -412,6 +460,7 @@
       font-size: 1rem;
       font-weight: 600;
       color: white;
+      z-index: 1;
     }
 
     .file-info {
@@ -533,9 +582,7 @@
       }
     }
 
-    /* ====== Glassy Call-UI overrides (scope: chat container & call parts only) ====== */
-
-    /* action-row buttons inside chat container (call + attach) */
+    /* Glassy Call-UI overrides */
     .chat-container .action-row .btn {
       padding: 10px 14px;
       border-radius: 14px;
@@ -550,7 +597,6 @@
       box-shadow: 0 14px 40px rgba(99,102,241,0.16);
     }
 
-    /* compact glass button used for attachments / small actions */
     .btn-glass {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
@@ -558,28 +604,24 @@
       color: #fff;
     }
 
-    /* accent call buttons (voice/video) */
     .btn-accent {
       background: linear-gradient(135deg,#60a5fa,#a78bfa);
       color: #fff;
       box-shadow: 0 6px 30px rgba(167,139,250,0.12);
     }
 
-    /* primary (accept) */
     .btn-primary {
       background: linear-gradient(135deg,#7c3aed,#4f46e5);
       color: #fff;
       box-shadow: 0 6px 30px rgba(79,70,229,0.14);
     }
 
-    /* destructive (hangup / reject) */
     .btn-destructive {
       background: linear-gradient(135deg,#ef4444,#dc2626);
       color: #fff;
       box-shadow: 0 6px 30px rgba(239,68,68,0.12);
     }
 
-    /* small icon button */
     .btn-icon-sm {
       width: 40px;
       height: 40px;
@@ -590,9 +632,8 @@
       justify-content: center;
     }
 
-    /* call controls panel */
     #callControls {
-      display: none; /* script toggles this */
+      display: none;
       justify-content: center;
       gap: 12px;
       margin: 1rem 0;
@@ -603,7 +644,6 @@
       backdrop-filter: blur(8px);
     }
 
-    /* incoming call popup (glassy) */
     .incoming-call {
       display: none;
       position: fixed;
@@ -621,7 +661,6 @@
     }
     .incoming-call h3 { margin: 0; font-size: 1.05rem; color: #fff; }
     .incoming-call .incoming-call-buttons { margin-top: 10px; display:flex; gap:12px; justify-content:center; }
-
   </style>
 </head>
 <body>
@@ -663,7 +702,6 @@
       </div>
     </div>
 
-    <!-- action-row: call buttons (UPDATED: glassy look + IDs) -->
     <div class="action-row">
       <button id="voiceCallBtn" class="btn btn-accent" onclick="startCall(false)" title="Voice Call">
         <i class="fas fa-phone"></i>
@@ -677,7 +715,6 @@
       <input type="file" id="file" onchange="sendFile()" />
     </div>
 
-    <!-- call-controls (UPDATED: glassy buttons) -->
     <div class="call-controls" id="callControls">
       <button id="muteBtn" class="btn btn-glass btn-icon-sm" onclick="toggleMute()" title="Mute/Unmute">
         <i id="micIcon" class="fas fa-microphone"></i>
@@ -718,7 +755,6 @@
       <video id="localVideo" muted autoplay playsinline></video>
     </div>
 
-    <!-- incoming call popup (UPDATED: glassy) -->
     <div id="incomingCall" class="incoming-call" style="display:none;">
       <p id="callerInfo">
         <i class="fas fa-phone-alt"></i>
@@ -736,540 +772,604 @@
   </div>
 
 <script>
-  const socket = io();
-  const username = localStorage.getItem("chat_username") || "Guest";
-  const room = localStorage.getItem("chat_room") || "default";
 
-  const messages = document.getElementById("messages");
-  const typingStatus = document.getElementById("typing");
+const socket = io();
 
-  // Join the room
-  socket.emit("join", { username, room });
+// Get or generate username - FIXED to properly handle username
+let username = localStorage.getItem("chat_username");
+if (!username) {
+  username = prompt("Please enter your username:") || `User${Math.floor(Math.random() * 1000)}`;
+  localStorage.setItem("chat_username", username);
+}
 
-  // Update online user list and count
-  socket.on("update_user_list", (data) => {
-    const userList = document.getElementById("userList");
-    const onlineCount = document.getElementById("onlineCount");
+const room = localStorage.getItem("chat_room") || "default";
 
-    userList.innerHTML = "";
+const messages = document.getElementById("messages");
+const typingStatus = document.getElementById("typing");
+
+// Join the room
+socket.emit("join", { username, room });
+
+// Update online user list and count - FIXED
+socket.on("update_user_list", (data) => {
+  const userList = document.getElementById("userList");
+  const onlineCount = document.getElementById("onlineCount");
+
+  userList.innerHTML = "";
+  
+  data.users.forEach(user => {
+    const li = document.createElement("li");
+    // Check if this user is the current user
+    const displayName = user === username ? "You" : user;
+    li.innerHTML = `<i class="fas fa-user"></i> ${displayName}`;
     
-    data.users.forEach(user => {
-      const li = document.createElement("li");
-      li.innerHTML = `<i class="fas fa-user"></i> ${user}`;
-      
-      if (user === "You") {
-        li.style.fontWeight = "600";
-        li.style.color = "#60a5fa";
-      }
-      
-      userList.appendChild(li);
-    });
-
-    onlineCount.textContent = data.count;
+    if (user === username) {
+      li.style.fontWeight = "600";
+      li.style.color = "#60a5fa";
+    }
+    
+    userList.appendChild(li);
   });
 
-  // Leave room on close
-  window.addEventListener("beforeunload", () => {
-    socket.emit("leave", { username, room });
-  });
+  onlineCount.textContent = data.count;
+});
 
-  // Handle incoming messages
-  socket.on("message", data => {
-    const div = document.createElement("div");
-    div.className = "msg";
+// Leave room on close
+window.addEventListener("beforeunload", () => {
+  socket.emit("leave", { username, room });
+});
 
-    const msg = data.message;
-    let formattedMessage = "";
-    
-    const sender = (data.username === username && data.username !== "System") ? "You" : data.username;
+// Download file function
+function downloadFile(url, fileName) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
-    // Detect different file types
-    if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
-      formattedMessage = `<img src="${msg}" style="max-width: 100%; border-radius: 12px; margin-top: 8px;">`;
-    }
-    else if (msg.match(/\.(mp3|wav|ogg|m4a)$/i)) {
-      formattedMessage = `<audio controls style="width: 100%; margin-top: 8px;"><source src="${msg}"></audio>`;
-    }
-    else if (msg.match(/\.(mp4|webm|mov)$/i)) {
-      formattedMessage = `<video controls style="width: 100%; border-radius: 8px; margin-top: 8px;"><source src="${msg}"></video>`;
-    }
-    else if (msg.startsWith("http") && msg.match(/\/uploads\//)) {
-      const fileName = msg.split("/").pop();
-      formattedMessage = `<a href="${msg}" download="${fileName}" class="shared-link"><i class="fas fa-file-download"></i> ${fileName}</a>`;
-    }
-    else if (msg.startsWith("http")) {
-      formattedMessage = `<a href="${msg}" target="_blank" class="shared-link"><i class="fas fa-external-link-alt"></i> ${msg}</a>`;
-    }
-    else {
-      formattedMessage = msg.replace(
-        /(https?:\/\/[^\s]+)/g,
-        (url) => `<a href="${url}" target="_blank" class="shared-link"><i class="fas fa-external-link-alt"></i> ${url}</a>`
-      );
-    }
+// Get file icon based on extension
+function getFileIcon(fileName) {
+  const ext = fileName.split('.').pop().toLowerCase();
+  const iconMap = {
+    pdf: 'fa-file-pdf',
+    doc: 'fa-file-word', docx: 'fa-file-word',
+    xls: 'fa-file-excel', xlsx: 'fa-file-excel',
+    ppt: 'fa-file-powerpoint', pptx: 'fa-file-powerpoint',
+    zip: 'fa-file-archive', rar: 'fa-file-archive',
+    jpg: 'fa-file-image', jpeg: 'fa-file-image', png: 'fa-file-image', gif: 'fa-file-image',
+    mp3: 'fa-file-audio', wav: 'fa-file-audio', ogg: 'fa-file-audio',
+    mp4: 'fa-file-video', webm: 'fa-file-video', mov: 'fa-file-video',
+    txt: 'fa-file-alt',
+    js: 'fa-file-code', html: 'fa-file-code', css: 'fa-file-code'
+  };
+  return iconMap[ext] || 'fa-file';
+}
 
-    if (data.username === "System") {
-      div.className = "msg system-msg";
-      div.innerHTML = formattedMessage;
-    } else {
-      div.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <strong style="font-weight: 600;">${sender}</strong>
-          <span style="font-size: 0.75rem; color: #a0a0a0;">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-        </div>
-        <div style="margin-left: 4px;">
-          ${formattedMessage}
-        </div>
-      `;
-    }
+// Handle incoming messages - FIXED with proper image download and user display
+socket.on("message", data => {
+  const div = document.createElement("div");
+  div.className = "msg";
 
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  });
+  const msg = data.message;
+  let formattedMessage = "";
+  
+  // FIXED: Proper sender display - shows actual username instead of "Guest"
+  const sender = (data.username === username && data.username !== "System") ? "You" : data.username;
 
-  // Receive file inside bubble
-  socket.on("file", ({ username: fromUser, fileName, data }) => {
-    if (!fromUser || !fileName || !data) return;
+  // Detect different file types - FIXED image handling with download button
+  if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+    const fileName = msg.split("/").pop();
+    formattedMessage = `
+      <div class="image-container">
+        <img src="${msg}" style="max-width: 100%; border-radius: 12px;">
+        <button class="download-btn" onclick="downloadFile('${msg}', '${fileName}')" title="Download Image">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+    `;
+  }
+  else if (msg.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+    const fileName = msg.split("/").pop();
+    formattedMessage = `
+      <audio controls style="width: 100%; margin-top: 8px;">
+        <source src="${msg}">
+      </audio>
+      <br><a href="${msg}" download="${fileName}" class="shared-link" style="font-size: 0.8rem; margin-top: 4px; display: inline-block;">
+        <i class="fas fa-download"></i> Download ${fileName}
+      </a>
+    `;
+  }
+  else if (msg.match(/\.(mp4|webm|mov)$/i)) {
+    const fileName = msg.split("/").pop();
+    formattedMessage = `
+      <video controls style="width: 100%; border-radius: 8px; margin-top: 8px;">
+        <source src="${msg}">
+      </video>
+      <br><a href="${msg}" download="${fileName}" class="shared-link" style="font-size: 0.8rem; margin-top: 4px; display: inline-block;">
+        <i class="fas fa-download"></i> Download ${fileName}
+      </a>
+    `;
+  }
+  // FIXED: PDF and other file handling - now shows as downloadable link
+  else if (msg.startsWith("http") && (msg.match(/\/uploads\//) || msg.match(/\.(pdf|doc|docx|txt|zip|rar|xlsx|pptx)$/i))) {
+    const fileName = msg.split("/").pop();
+    const fileIcon = getFileIcon(fileName);
+    formattedMessage = `<a href="${msg}" download="${fileName}" class="shared-link"><i class="fas ${fileIcon}"></i> ${fileName}</a>`;
+  }
+  else if (msg.startsWith("http")) {
+    formattedMessage = `<a href="${msg}" target="_blank" class="shared-link"><i class="fas fa-external-link-alt"></i> ${msg}</a>`;
+  }
+  else {
+    formattedMessage = msg.replace(
+      /(https?:\/\/[^\s]+)/g,
+      (url) => `<a href="${url}" target="_blank" class="shared-link"><i class="fas fa-external-link-alt"></i> ${url}</a>`
+    );
+  }
 
-    const div = document.createElement("div");
-    div.className = "msg";
-    
-    const sender = fromUser === localStorage.getItem("chat_username") ? "You" : fromUser;
-
+  if (data.username === "System") {
+    div.className = "msg system-msg";
+    div.innerHTML = formattedMessage;
+  } else {
     div.innerHTML = `
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
         <strong style="font-weight: 600;">${sender}</strong>
         <span style="font-size: 0.75rem; color: #a0a0a0;">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
       </div>
       <div style="margin-left: 4px;">
-        <a href="${data}" download="${fileName}" class="shared-link">
-          <i class="fas fa-file-download"></i> ${fileName}
-        </a>
+        ${formattedMessage}
       </div>
     `;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  });
-
-  // Notify typing
-  function notifyTyping() {
-    socket.emit("typing", { username, room });
   }
 
-  // Show typing status
-  socket.on("typing", (data) => {
-    if (data.username !== username) {
-      typingStatus.innerHTML = `
-        <i class="fas fa-user"></i>
-        ${data.username} is typing
-        <div class="typing-indicator">
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-        </div>
-      `;
-      clearTimeout(window.typingTimeout);
-      window.typingTimeout = setTimeout(() => {
-        typingStatus.textContent = "";
-      }, 2000);
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
+
+// Receive file inside bubble - FIXED
+socket.on("file", ({ username: fromUser, fileName, data }) => {
+  if (!fromUser || !fileName || !data) return;
+
+  const div = document.createElement("div");
+  div.className = "msg";
+  
+  const sender = fromUser === username ? "You" : fromUser;
+  const fileIcon = getFileIcon(fileName);
+
+  div.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+      <strong style="font-weight: 600;">${sender}</strong>
+      <span style="font-size: 0.75rem; color: #a0a0a0;">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+    </div>
+    <div style="margin-left: 4px;">
+      <a href="${data}" download="${fileName}" class="shared-link">
+        <i class="fas ${fileIcon}"></i> ${fileName}
+      </a>
+    </div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
+
+// Notify typing
+function notifyTyping() {
+  socket.emit("typing", { username, room });
+}
+
+// Show typing status
+socket.on("typing", (data) => {
+  if (data.username !== username) {
+    typingStatus.innerHTML = `
+      <i class="fas fa-user"></i>
+      ${data.username} is typing
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    `;
+    clearTimeout(window.typingTimeout);
+    window.typingTimeout = setTimeout(() => {
+      typingStatus.textContent = "";
+    }, 2000);
+  }
+});
+
+// Send a message
+function sendMessage() {
+  const msg = document.getElementById("messageInput").value.trim();
+  if (!msg) return;
+  socket.emit("message", { username, room, message: msg });
+  document.getElementById("messageInput").value = "";
+  typingStatus.textContent = "";
+}
+
+// Enter key to send message
+document.getElementById("messageInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    sendMessage();
+  }
+});
+
+// Toggle day/night mode
+function toggleTheme(){
+  document.body.classList.toggle("dark-mode");
+  document.documentElement.classList.toggle("dark-mode");
+
+  const icon = document.getElementById("theme-icon");
+  const isDark = document.body.classList.contains("dark-mode");
+  icon.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+}
+
+// File upload functionality
+let currentUpload = null;
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// FIXED: File upload function with better progress ring alignment
+function sendFile() {
+  const fileInput = document.getElementById("file");
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const progressContainer = document.getElementById("progressContainer");
+  const progressCircle = document.getElementById("progressCircle");
+  const progressText = document.getElementById("progressText");
+  const fileInfo = document.getElementById("fileInfo");
+  const fileName = document.getElementById("fileName");
+  const fileSize = document.getElementById("fileSize");
+  const fileIcon = fileInfo.querySelector("i");
+
+  // Show file info
+  fileName.textContent = file.name;
+  fileSize.textContent = formatFileSize(file.size);
+  fileIcon.className = `fas ${getFileIcon(file.name)}`;
+  fileInfo.style.display = "flex";
+  
+  // FIXED: Better progress container display
+  progressContainer.style.display = "block";
+  progressText.textContent = "0%";
+  progressCircle.style.strokeDashoffset = "283";
+
+  const xhr = new XMLHttpRequest();
+  currentUpload = xhr;
+
+  xhr.upload.onprogress = function (e) {
+    if (e.lengthComputable) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      const offset = 283 - (283 * percent / 100);
+      progressCircle.style.strokeDashoffset = offset;
+      progressText.textContent = `${percent}%`;
     }
-  });
+  };
 
-  // Send a message
-  function sendMessage() {
-    const msg = document.getElementById("messageInput").value.trim();
-    if (!msg) return;
-    socket.emit("message", { username, room, message: msg });
-    document.getElementById("messageInput").value = "";
-    typingStatus.textContent = "";
-  }
-
-  // Enter key to send message
-  document.getElementById("messageInput").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  });
-
-  // Toggle day/night mode
-  function toggleTheme(){
-    document.body.classList.toggle("dark-mode");
-    document.documentElement.classList.toggle("dark-mode");
-
-    const icon = document.getElementById("theme-icon");
-    const isDark = document.body.classList.contains("dark-mode");
-    icon.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-  }
-
-  // File upload functionality
-  let currentUpload = null;
-
-  function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  function getFileIcon(fileName) {
-    const ext = fileName.split('.').pop().toLowerCase();
-    const iconMap = {
-      pdf: 'fa-file-pdf',
-      doc: 'fa-file-word', docx: 'fa-file-word',
-      xls: 'fa-file-excel', xlsx: 'fa-file-excel',
-      ppt: 'fa-file-powerpoint', pptx: 'fa-file-powerpoint',
-      zip: 'fa-file-archive', rar: 'fa-file-archive',
-      jpg: 'fa-file-image', jpeg: 'fa-file-image', png: 'fa-file-image', gif: 'fa-file-image',
-      mp3: 'fa-file-audio', wav: 'fa-file-audio', ogg: 'fa-file-audio',
-      mp4: 'fa-file-video', webm: 'fa-file-video', mov: 'fa-file-video',
-      txt: 'fa-file-alt',
-      js: 'fa-file-code', html: 'fa-file-code', css: 'fa-file-code'
-    };
-    return iconMap[ext] || 'fa-file';
-  }
-
-  function sendFile() {
-    const fileInput = document.getElementById("file");
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const progressContainer = document.getElementById("progressContainer");
-    const progressCircle = document.getElementById("progressCircle");
-    const progressText = document.getElementById("progressText");
-    const fileInfo = document.getElementById("fileInfo");
-    const fileName = document.getElementById("fileName");
-    const fileSize = document.getElementById("fileSize");
-    const fileIcon = fileInfo.querySelector("i");
-
-    // Show file info
-    fileName.textContent = file.name;
-    fileSize.textContent = formatFileSize(file.size);
-    fileIcon.className = `fas ${getFileIcon(file.name)}`;
-    fileInfo.style.display = "flex";
-    
-    progressContainer.style.display = "block";
-    progressText.textContent = "0%";
-    progressCircle.style.strokeDashoffset = "283";
-
-    const xhr = new XMLHttpRequest();
-    currentUpload = xhr;
-
-    xhr.upload.onprogress = function (e) {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        const offset = 283 - (283 * percent / 100);
-        progressCircle.style.strokeDashoffset = offset;
-        progressText.textContent = `${percent}%`;
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      if (data.url) {
+        // Send file URL as message
+        socket.emit("message", {
+          username,
+          room,
+          message: data.url
+        });
+        
+        // Also send file info for better handling
+        socket.emit("file", {
+          username,
+          room,
+          fileName: file.name,
+          data: data.url
+        });
       }
-    };
-
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        const data = JSON.parse(xhr.responseText);
-        if (data.url) {
-          socket.emit("message", {
-            username,
-            room,
-            message: data.url
-          });
-        }
-        progressText.innerHTML = '<i class="fas fa-check"></i>';
-      } else {
-        progressText.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-      }
-
-      setTimeout(() => {
-        progressContainer.style.display = "none";
-        fileInfo.style.display = "none";
-        progressCircle.style.strokeDashoffset = "283";
-      }, 1500);
-      currentUpload = null;
-      fileInput.value = "";
-    };
-
-    xhr.onerror = function () {
+      progressText.innerHTML = '<i class="fas fa-check"></i>';
+    } else {
       progressText.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-      setTimeout(() => {
-        progressContainer.style.display = "none";
-        fileInfo.style.display = "none";
-        progressCircle.style.strokeDashoffset = "283";
-      }, 1500);
-      currentUpload = null;
-      fileInput.value = "";
+    }
+
+    setTimeout(() => {
+      progressContainer.style.display = "none";
+      fileInfo.style.display = "none";
+      progressCircle.style.strokeDashoffset = "283";
+    }, 1500);
+    currentUpload = null;
+    fileInput.value = "";
+  };
+
+  xhr.onerror = function () {
+    progressText.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+    setTimeout(() => {
+      progressContainer.style.display = "none";
+      fileInfo.style.display = "none";
+      progressCircle.style.strokeDashoffset = "283";
+    }, 1500);
+    currentUpload = null;
+    fileInput.value = "";
+  };
+
+  xhr.open("POST", "/upload", true);
+  xhr.send(formData);
+}
+
+function cancelUpload() {
+  if (currentUpload) {
+    currentUpload.abort();
+    currentUpload = null;
+    document.getElementById("progressContainer").style.display = "none";
+    document.getElementById("fileInfo").style.display = "none";
+    document.getElementById("file").value = "";
+  }
+}
+
+// WebRTC functionality
+let localStream, remoteStream, peerConnection;
+const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+let isVideoCall = false;
+let isMuted = false;
+let isCamOn = true;
+let isInCall = false;
+
+function startCall(video) {
+  isVideoCall = video;
+  const videoArea = document.getElementById("videoArea");
+  const callControls = document.getElementById("callControls");
+  const cameraBtn = document.getElementById("cameraBtn");
+
+  videoArea.style.display = video ? "block" : "none";
+  callControls.style.display = "flex";
+  cameraBtn.style.display = video ? "block" : "none";
+  document.getElementById("voiceCallBtn").disabled = true;
+  document.getElementById("videoCallBtn").disabled = true;
+  isInCall = true;
+
+  navigator.mediaDevices.getUserMedia({ audio: true, video: video }).then(stream => {
+    localStream = stream;
+    if (video) {
+      document.getElementById("localVideo").srcObject = stream;
+    }
+
+    peerConnection = new RTCPeerConnection(config);
+    peerConnection.onicecandidate = e => {
+      if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
+    };
+    peerConnection.ontrack = e => {
+      document.getElementById("remoteVideo").srcObject = e.streams[0];
+    };
+    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+    peerConnection.createOffer().then(offer => {
+      peerConnection.setLocalDescription(offer);
+      socket.emit("offer", { offer, username, room, video });
+    });
+  }).catch(err => {
+    console.error("Error accessing media devices:", err);
+    socket.emit("message", { username: "System", room, message: "Failed to access camera/microphone" });
+    endCall();
+  });
+}
+
+socket.on("offer", ({ offer, username: caller, video }) => {
+  if (isInCall) return; // Ignore if already in a call
+  
+  isVideoCall = video;
+  window.pendingOffer = offer;
+  window.caller = caller;
+
+  document.getElementById("callerInfo").innerHTML = `
+    <i class="fas fa-phone-alt"></i>
+    Incoming ${video ? 'video' : 'voice'} call from ${caller}
+  `;
+  document.getElementById("incomingCall").style.display = "block";
+});
+
+function acceptCall() {
+  document.getElementById("incomingCall").style.display = "none";
+  isInCall = true;
+
+  navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall }).then(stream => {
+    localStream = stream;
+    if (isVideoCall) {
+      document.getElementById("localVideo").srcObject = stream;
+      document.getElementById("videoArea").style.display = "block";
+    }
+
+    peerConnection = new RTCPeerConnection(config);
+    peerConnection.onicecandidate = e => {
+      if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
+    };
+    peerConnection.ontrack = e => {
+      document.getElementById("remoteVideo").srcObject = e.streams[0];
     };
 
-    xhr.open("POST", "/upload", true);
-    xhr.send(formData);
-  }
+    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+    peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
+    peerConnection.createAnswer().then(answer => {
+      peerConnection.setLocalDescription(answer);
+      socket.emit("answer", { answer, room });
+    });
 
-  function cancelUpload() {
-    if (currentUpload) {
-      currentUpload.abort();
-      currentUpload = null;
-      document.getElementById("progressContainer").style.display = "none";
-      document.getElementById("fileInfo").style.display = "none";
-      document.getElementById("file").value = "";
-    }
-  }
-
-  // WebRTC functionality
-  let localStream, remoteStream, peerConnection;
-  const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-  let isVideoCall = false;
-  let isMuted = false;
-  let isCamOn = true;
-
-  function startCall(video) {
-    isVideoCall = video;
-    const videoArea = document.getElementById("videoArea");
-    const callControls = document.getElementById("callControls");
-    const cameraBtn = document.getElementById("cameraBtn");
-
-    videoArea.style.display = video ? "block" : "none";
-    callControls.style.display = "flex";
-    cameraBtn.style.display = video ? "block" : "none";
+    document.getElementById("callControls").style.display = "flex";
+    document.getElementById("cameraBtn").style.display = isVideoCall ? "block" : "none";
     document.getElementById("voiceCallBtn").disabled = true;
     document.getElementById("videoCallBtn").disabled = true;
-
-    navigator.mediaDevices.getUserMedia({ audio: true, video: video }).then(stream => {
-      localStream = stream;
-      if (video) {
-        document.getElementById("localVideo").srcObject = stream;
-      }
-
-      peerConnection = new RTCPeerConnection(config);
-      peerConnection.onicecandidate = e => {
-        if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
-      };
-      peerConnection.ontrack = e => {
-        document.getElementById("remoteVideo").srcObject = e.streams[0];
-      };
-      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-      peerConnection.createOffer().then(offer => {
-        peerConnection.setLocalDescription(offer);
-        socket.emit("offer", { offer, username, room, video });
-      });
-    }).catch(err => {
-      console.error("Error accessing media devices:", err);
-      socket.emit("message", { username: "System", room, message: "Failed to access camera/microphone" });
-    });
-  }
-
-  socket.on("offer", ({ offer, username: caller, video }) => {
-    isVideoCall = video;
-    window.pendingOffer = offer;
-    window.caller = caller;
-
-    document.getElementById("callerInfo").innerHTML = `
-      <i class="fas fa-phone-alt"></i>
-      Incoming ${video ? 'video' : 'voice'} call from ${caller}
-    `;
-    document.getElementById("incomingCall").style.display = "block";
+  }).catch(err => {
+    console.error("Error accessing media devices:", err);
+    rejectCall();
   });
+}
 
-  function acceptCall() {
-    document.getElementById("incomingCall").style.display = "none";
+function rejectCall() {
+  document.getElementById("incomingCall").style.display = "none";
+  socket.emit("reject-call", { username, room });
 
-    navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall }).then(stream => {
-      localStream = stream;
-      if (isVideoCall) {
-        document.getElementById("localVideo").srcObject = stream;
-      }
-
-      peerConnection = new RTCPeerConnection(config);
-      peerConnection.onicecandidate = e => {
-        if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
-      };
-      peerConnection.ontrack = e => {
-        document.getElementById("remoteVideo").srcObject = e.streams[0];
-      };
-
-      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-      peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
-      peerConnection.createAnswer().then(answer => {
-        peerConnection.setLocalDescription(answer);
-        socket.emit("answer", { answer, room });
-      });
-
-      document.getElementById("videoArea").style.display = isVideoCall ? "block" : "none";
-      document.getElementById("callControls").style.display = "flex";
-      document.getElementById("cameraBtn").style.display = isVideoCall ? "block" : "none";
-      document.getElementById("voiceCallBtn").disabled = true;
-      document.getElementById("videoCallBtn").disabled = true;
-    }).catch(err => {
-      console.error("Error accessing media devices:", err);
-      rejectCall();
-    });
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
   }
 
-  function rejectCall() {
-    document.getElementById("incomingCall").style.display = "none";
-    socket.emit("reject-call", { username, room });
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+}
 
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      localStream = null;
-    }
+socket.on("answer", ({ answer }) => {
+  if (peerConnection) {
+    peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+  }
+});
 
-    if (peerConnection) {
-      peerConnection.close();
-      peerConnection = null;
-    }
+socket.on("ice-candidate", ({ candidate }) => {
+  if (peerConnection) {
+    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+  }
+});
+
+// Call control functions - FIXED with proper button styling
+function toggleMute() {
+  if (!localStream) return;
+
+  isMuted = !isMuted;
+  const audioTrack = localStream.getAudioTracks()[0];
+  if (audioTrack) {
+    audioTrack.enabled = !isMuted;
   }
 
-  socket.on("answer", ({ answer }) => {
-    if (peerConnection) {
-      peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-    }
-  });
+  const micIcon = document.getElementById("micIcon");
+  const muteBtn = document.getElementById("muteBtn");
 
-  socket.on("ice-candidate", ({ candidate }) => {
-    if (peerConnection) {
-      peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-  });
-
-  // ====== REPLACED toggleMute, toggleCamera, endCall functions (glassy button classes) ======
-
-  function toggleMute() {
-    if (!localStream) return;
-
-    isMuted = !isMuted;
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack.enabled = !isMuted;
-    }
-
-    const micIcon = document.getElementById("micIcon");
-    const muteBtn = document.getElementById("muteBtn");
-
-    if (isMuted) {
-      micIcon.className = "fas fa-microphone-slash";
-      muteBtn.className = "btn btn-destructive btn-icon-sm";
-    } else {
-      micIcon.className = "fas fa-microphone";
-      muteBtn.className = "btn btn-glass btn-icon-sm";
-    }
-  }
-
-  function toggleCamera() {
-    if (!localStream || !isVideoCall) return;
-
-    isCamOn = !isCamOn;
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.enabled = isCamOn;
-    }
-
-    const camIcon = document.getElementById("camIcon");
-    const cameraBtn = document.getElementById("cameraBtn");
-
-    if (!isCamOn) {
-      camIcon.className = "fas fa-video-slash";
-      cameraBtn.className = "btn btn-destructive btn-icon-sm";
-    } else {
-      camIcon.className = "fas fa-video";
-      cameraBtn.className = "btn btn-glass btn-icon-sm";
-    }
-  }
-
-  function endCall() {
-    if (peerConnection) {
-      peerConnection.close();
-      peerConnection = null;
-    }
-
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      localStream = null;
-    }
-
-    document.getElementById("remoteVideo").srcObject = null;
-    document.getElementById("localVideo").srcObject = null;
-    document.getElementById("videoArea").style.display = "none";
-    document.getElementById("callControls").style.display = "none";
-    document.getElementById("incomingCall").style.display = "none";
-
-    // Reset call state & button styles
-    isInCall = false;
-    isMuted = false;
-    isCamOn = true;
-
-    const micIcon = document.getElementById("micIcon");
-    const camIcon = document.getElementById("camIcon");
+  if (isMuted) {
+    micIcon.className = "fas fa-microphone-slash";
+    muteBtn.className = "btn btn-destructive btn-icon-sm";
+  } else {
     micIcon.className = "fas fa-microphone";
-    camIcon.className = "fas fa-video";
+    muteBtn.className = "btn btn-glass btn-icon-sm";
+  }
+}
 
-    const muteBtn = document.getElementById("muteBtn");
-    if (muteBtn) muteBtn.className = "btn btn-glass btn-icon-sm";
+function toggleCamera() {
+  if (!localStream || !isVideoCall) return;
 
-    const cameraBtn = document.getElementById("cameraBtn");
-    if (cameraBtn) cameraBtn.className = "btn btn-glass btn-icon-sm";
-
-    // restore call buttons
-    const voiceBtn = document.getElementById("voiceCallBtn");
-    const videoBtn = document.getElementById("videoCallBtn");
-    if (voiceBtn) voiceBtn.disabled = false;
-    if (videoBtn) videoBtn.disabled = false;
-
-    socket.emit("call-ended", { username, room });
-    socket.emit("message", { username: "System", room, message: "Call ended." });
+  isCamOn = !isCamOn;
+  const videoTrack = localStream.getVideoTracks()[0];
+  if (videoTrack) {
+    videoTrack.enabled = isCamOn;
   }
 
-  // ====== end replaced functions ======
+  const camIcon = document.getElementById("camIcon");
+  const cameraBtn = document.getElementById("cameraBtn");
 
-  socket.on("call-ended", ({ username: callerName }) => {
-    endCall();
-    socket.emit("message", {
-      username: "System",
-      room,
-      message: `Call ended by ${callerName}`
-    });
+  if (!isCamOn) {
+    camIcon.className = "fas fa-video-slash";
+    cameraBtn.className = "btn btn-destructive btn-icon-sm";
+  } else {
+    camIcon.className = "fas fa-video";
+    cameraBtn.className = "btn btn-glass btn-icon-sm";
+  }
+}
+
+function endCall() {
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  document.getElementById("remoteVideo").srcObject = null;
+  document.getElementById("localVideo").srcObject = null;
+  document.getElementById("videoArea").style.display = "none";
+  document.getElementById("callControls").style.display = "none";
+  document.getElementById("incomingCall").style.display = "none";
+
+  // Reset call state & button styles
+  isInCall = false;
+  isMuted = false;
+  isCamOn = true;
+
+  const micIcon = document.getElementById("micIcon");
+  const camIcon = document.getElementById("camIcon");
+  micIcon.className = "fas fa-microphone";
+  camIcon.className = "fas fa-video";
+
+  const muteBtn = document.getElementById("muteBtn");
+  if (muteBtn) muteBtn.className = "btn btn-glass btn-icon-sm";
+
+  const cameraBtn = document.getElementById("cameraBtn");
+  if (cameraBtn) cameraBtn.className = "btn btn-glass btn-icon-sm";
+
+  // restore call buttons
+  const voiceBtn = document.getElementById("voiceCallBtn");
+  const videoBtn = document.getElementById("videoCallBtn");
+  if (voiceBtn) voiceBtn.disabled = false;
+  if (videoBtn) videoBtn.disabled = false;
+
+  socket.emit("call-ended", { username, room });
+}
+
+socket.on("call-ended", ({ username: callerName }) => {
+  endCall();
+  socket.emit("message", {
+    username: "System",
+    room,
+    message: `Call ended by ${callerName}`
   });
+});
 
-  socket.on("call-rejected", ({ username: callerName }) => {
-    endCall();
-    socket.emit("message", {
-      username: "System",
-      room,
-      message: `Call was rejected by ${callerName}`
-    });
+socket.on("call-rejected", ({ username: callerName }) => {
+  endCall();
+  socket.emit("message", {
+    username: "System",
+    room,
+    message: `Call was rejected by ${callerName}`
   });
+});
 
-  // Security features
-  window.addEventListener("beforeunload", function (e) {
+// Security features
+window.addEventListener("beforeunload", function (e) {
+  if (isInCall) {
+    endCall();
+  }
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+document.addEventListener("keydown", function (e) {
+  const k = e.key.toLowerCase();
+  if (
+    e.key === "F12" ||
+    (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(k)) ||
+    (e.ctrlKey && k === "u") ||
+    (e.metaKey && k === "u")
+  ) {
     e.preventDefault();
-    e.returnValue = '';
-  });
+    e.stopPropagation();
+  }
+});
 
-  document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("copy", function (e) {
+  const sel = window.getSelection();
+  const anchor = sel?.anchorNode;
+  const isLink = anchor && anchor.parentElement?.classList.contains("shared-link");
 
-  document.addEventListener("keydown", function (e) {
-    const k = e.key.toLowerCase();
-    if (
-      e.key === "F12" ||
-      (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(k)) ||
-      (e.ctrlKey && k === "u") ||
-      (e.metaKey && k === "u")
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  });
+  if (!isLink) {
+    e.preventDefault();
+  }
+});
 
-  document.addEventListener("copy", function (e) {
-    const sel = window.getSelection();
-    const anchor = sel?.anchorNode;
-    const isLink = anchor && anchor.parentElement?.classList.contains("shared-link");
-
-    if (!isLink) {
-      e.preventDefault();
-    }
-  });
 </script>
-
-</body>
-</html>
