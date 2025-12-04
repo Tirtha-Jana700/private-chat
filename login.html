@@ -1,154 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Login - Private Chat</title>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;500;700&display=swap" rel="stylesheet">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     :root {
       --bg-img: url('https://ik.imagekit.io/mrg7wer1a/00e8c93664d6bff03bb070e01997d3e9.jpg?updatedAt=1754334086654');
       --accent-color: #a5d8ff;
-      --glass: rgba(255, 255, 255, 0.1);
-      --border: rgba(255, 255, 255, 0.3);
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.25);
       --text-color: #ffffff;
-      --btn-bg: #6c5ce7;
-      --btn-hover: #a29bfe;
+      --btn-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --btn-hover: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      --input-bg: rgba(255, 255, 255, 0.15);
     }
 
     html, body {
-      margin: 0;
-      padding: 0;
       height: 100%;
       font-family: 'Raleway', sans-serif;
       background: var(--bg-img) center/cover no-repeat fixed;
       color: var(--text-color);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.6s ease;
-      overflow: hidden;
-    }
-
-    .container {
-      backdrop-filter: blur(15px);
-      background-color: var(--glass);
-      border: 2px solid var(--border);
-      padding: 2rem;
-      border-radius: 20px;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      text-align: center;
-      animation: fadeIn 1.5s ease;
-      position: relative;
-      z-index: 2;
-    }
-
-    h2 {
-      margin-bottom: 1.5rem;
-      font-weight: 700;
-      font-size: 1.8rem;
-      color: var(--accent-color);
-      text-shadow: 0 0 10px rgba(165, 216, 255, 0.7);
-    }
-
-    input {
-      width: 100%;
-      padding: 0.8rem;
-      margin-bottom: 1rem;
-      border-radius: 12px;
-      border: none;
-      font-size: 1rem;
-      background: rgba(255, 255, 255, 0.15);
-      color: var(--text-color);
-      outline: none;
-      box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.2);
-    }
-
-    input::placeholder {
-      color: #eee;
-    }
-
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 12px;
-      background: var(--btn-bg);
-      color: white;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.4s ease, transform 0.3s;
-      box-shadow: 0 0 12px rgba(108, 92, 231, 0.5);
-    }
-
-    button:hover {
-      background: var(--btn-hover);
-      transform: scale(1.03);
-    }
-
-    .privacy-link {
-      margin-top: 1rem;
-      font-size: 0.85rem;
-    }
-
-    .privacy-link a {
-      color: #a5d8ff;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 100;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      background-color: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(6px);
-      padding: 2rem;
-      box-sizing: border-box;
-      text-align: center;
-    }
-
-    .modal-content {
-      background-color: var(--glass);
-      color: var(--text-color);
-      max-width: 480px;
-      width: auto;
-      margin: auto;
-      padding: 2rem 1.5rem;
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-      animation: fadeIn 0.4s ease;
-      text-align: center;
-    }
-
-    .close-btn {
-      margin-top: 1.5rem;
-      padding: 0.7rem 1.4rem;
-      font-size: 1rem;
-      background-color: var(--btn-bg);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .close-btn:hover {
-      background-color: var(--btn-hover);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      padding: 20px;
     }
 
     .particles {
@@ -159,12 +50,13 @@
       height: 100%;
       pointer-events: none;
       z-index: 1;
+      overflow: hidden;
     }
 
     .particles span {
       position: absolute;
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       background: transparent;
       animation: floatStar 10s linear infinite;
     }
@@ -177,7 +69,7 @@
       height: 100%;
       background: white;
       border-radius: 2px;
-      box-shadow: 0 0 8px #ffffffaa;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
     }
 
     .particles span::before {
@@ -194,9 +86,221 @@
       100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
     }
 
+    .container {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: var(--glass-bg);
+      border: 2px solid var(--glass-border);
+      padding: 2.5rem 2rem;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      text-align: center;
+      animation: fadeIn 1.2s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2 {
+      margin-bottom: 2rem;
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: var(--accent-color);
+      text-shadow: 0 0 15px rgba(165, 216, 255, 0.5);
+      line-height: 1.4;
+    }
+
+    .input-group {
+      margin-bottom: 1.2rem;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      font-size: 1rem;
+      background: var(--input-bg);
+      color: var(--text-color);
+      outline: none;
+      transition: all 0.3s ease;
+      font-family: 'Raleway', sans-serif;
+    }
+
+    input:focus {
+      border-color: var(--accent-color);
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 0 3px rgba(165, 216, 255, 0.2);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    button {
+      width: 100%;
+      padding: 1rem;
+      margin-top: 1rem;
+      border: none;
+      border-radius: 14px;
+      background: var(--btn-bg);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      font-family: 'Raleway', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .privacy-link {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .privacy-link a {
+      color: var(--accent-color);
+      text-decoration: underline;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+    }
+
+    .privacy-link a:hover {
+      opacity: 0.8;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: var(--glass-bg);
+      color: var(--text-color);
+      max-width: 500px;
+      width: 100%;
+      margin: auto;
+      padding: 2rem;
+      border-radius: 20px;
+      border: 2px solid var(--glass-border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.4s ease;
+      text-align: left;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-content h4 {
+      margin-bottom: 1rem;
+      color: var(--accent-color);
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    .modal-content p {
+      margin-bottom: 1rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .close-btn {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: var(--btn-bg);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .close-btn:hover {
+      background: var(--btn-hover);
+    }
+
     @media (max-width: 500px) {
-      h2 { font-size: 1.5rem; }
-      .container { padding: 1.5rem 1rem; }
+      .container {
+        padding: 2rem 1.5rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      input, button {
+        font-size: 0.95rem;
+      }
+
+      .modal-content {
+        padding: 1.5rem;
+      }
+    }
+
+    /* iOS specific fixes */
+    @supports (-webkit-touch-callout: none) {
+      input {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+      }
     }
   </style>
 </head>
@@ -204,17 +308,34 @@
   <div class="particles" id="particles"></div>
 
   <div class="container">
-    <h2>🌸Welcome! Login into My Private Chat</h2>
-    <input
-      id="username"
-      type="text"
-      placeholder="Enter your username"
-      pattern="[A-Za-z]+"
-      title="Username must contain only letters A–Z (no emojis, numbers, or spaces)"
-      maxlength="20"
-      required
-    />
-    <input id="room" type="text" placeholder="Enter room ID" />
+    <h2>🌸 Welcome to Private Chat</h2>
+    
+    <div class="input-group">
+      <label for="username">Username</label>
+      <input
+        id="username"
+        type="text"
+        placeholder="Enter your username"
+        pattern="[A-Za-z]+"
+        title="Letters only (A-Z)"
+        maxlength="20"
+        autocomplete="off"
+        required
+      />
+    </div>
+
+    <div class="input-group">
+      <label for="room">Room ID</label>
+      <input
+        id="room"
+        type="text"
+        placeholder="Enter room ID"
+        maxlength="50"
+        autocomplete="off"
+        required
+      />
+    </div>
+
     <button onclick="joinRoom()">Join Room</button>
 
     <p class="privacy-link">
@@ -222,20 +343,36 @@
     </p>
   </div>
 
-  <!-- Privacy Modal -->
   <div id="policyModal" class="modal">
     <div class="modal-content">
       <h4>🔒 Privacy Policy</h4>
-      <p>This private chat app does not collect or store any personal data on the server.</p>
-      <p>Usernames and room IDs are only stored locally on your device to enable private communication.</p>
-      <p>By using this chat, you agree to communicate respectfully and avoid sharing sensitive or illegal content.</p>
+      <p>This private chat application respects your privacy:</p>
+      <ul style="margin-left: 1.5rem; line-height: 1.8;">
+        <li>No personal data is collected or stored on servers</li>
+        <li>Usernames and room IDs are stored locally on your device only</li>
+        <li>Messages are transmitted securely and not permanently stored</li>
+        <li>WebRTC calls are peer-to-peer encrypted</li>
+      </ul>
+      <p style="margin-top: 1rem;">By using this chat, you agree to communicate respectfully and avoid sharing sensitive or illegal content.</p>
       <button class="close-btn" onclick="closePolicy()">Close</button>
     </div>
   </div>
 
   <script>
+    // Generate floating particles
+    const particles = document.getElementById("particles");
+    for (let i = 0; i < 40; i++) {
+      const star = document.createElement("span");
+      star.style.left = Math.random() * 100 + "vw";
+      star.style.top = Math.random() * 100 + "vh";
+      star.style.animationDuration = (5 + Math.random() * 10) + "s";
+      star.style.animationDelay = Math.random() * 5 + "s";
+      star.style.opacity = Math.random() * 0.5 + 0.3;
+      particles.appendChild(star);
+    }
+
     function showPolicy() {
-      document.getElementById("policyModal").style.display = "block";
+      document.getElementById("policyModal").style.display = "flex";
     }
 
     function closePolicy() {
@@ -247,33 +384,21 @@
       if (e.target === modal) closePolicy();
     };
 
-    // Floating stars
-    const particles = document.getElementById("particles");
-    for (let i = 0; i < 50; i++) {
-      const star = document.createElement("span");
-      star.style.left = Math.random() * 100 + "vw";
-      star.style.top = Math.random() * 100 + "vh";
-      star.style.animationDuration = (4 + Math.random() * 8) + "s";
-      star.style.opacity = Math.random();
-      particles.appendChild(star);
-    }
-
-    // Validate that username is only A–Z (no emoji, no numbers)
     function isValidUsername(name) {
       return /^[A-Za-z]+$/.test(name);
     }
 
-    function showCustomAlert(message) {
+    function showAlert(message) {
       const alertModal = document.createElement('div');
-      alertModal.classList.add('modal');
+      alertModal.className = 'modal';
+      alertModal.style.display = 'flex';
       alertModal.innerHTML = `
-          <div class="modal-content">
-              <p style="font-size: 1.1rem; color: white; margin-bottom: 1rem;">${message}</p>
-              <button class="close-btn" onclick="this.parentElement.parentElement.remove();">OK</button>
-          </div>
+        <div class="modal-content" style="text-align: center;">
+          <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">${message}</p>
+          <button class="close-btn" onclick="this.parentElement.parentElement.remove()">OK</button>
+        </div>
       `;
       document.body.appendChild(alertModal);
-      alertModal.style.display = "flex";
     }
 
     function joinRoom() {
@@ -281,19 +406,49 @@
       const room = document.getElementById("room").value.trim();
 
       if (!username || !room) {
-        return showCustomAlert("Please fill in both fields");
+        return showAlert("⚠️ Please fill in both fields");
       }
 
       if (!isValidUsername(username)) {
-        return showCustomAlert("❌ Username must contain only letters (A–Z), no numbers, emojis, or symbols.");
+        return showAlert("❌ Username must contain only letters (A-Z)");
       }
 
-      // ✅ Corrected: Save user info with the correct keys
-      sessionStorage.setItem("chat_username", username);
-      sessionStorage.setItem("chat_room", room);
+      if (username.length < 2) {
+        return showAlert("⚠️ Username must be at least 2 characters");
+      }
+
+      if (room.length < 2) {
+        return showAlert("⚠️ Room ID must be at least 2 characters");
+      }
+
+      localStorage.setItem("chat_username", username);
+      localStorage.setItem("chat_room", room);
 
       window.location.href = "/chat";
     }
+
+    // Allow Enter key to submit
+    document.getElementById("room").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        joinRoom();
+      }
+    });
+
+    document.getElementById("username").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        document.getElementById("room").focus();
+      }
+    });
+
+    // Prevent zoom on iOS double-tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
   </script>
 </body>
 </html>
