@@ -1,8 +1,8 @@
-Flask==3.0.0
-flask-socketio==5.3.5
+​Flask==3.0.0
 flask-cors==4.0.0
-python-socketio==5.10.0
-eventlet==0.33.3
 bleach==6.1.0
 werkzeug==3.0.1
-gunicorn==21.2.0
+eventlet==0.35.2
+python-socketio==5.11.0
+flask-socketio==5.3.6
+gunicorn==22.0.0
