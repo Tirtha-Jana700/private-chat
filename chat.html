@@ -128,6 +128,12 @@
       padding: 0.3rem 0;
       color: rgba(255, 255, 255, 0.85);
     }
+    
+    /* Highlight current user in the list */
+    #userList li.current-user {
+        font-weight: bold;
+        color: #74c0fc;
+    }
 
     #messages {
       flex: 1;
@@ -418,7 +424,7 @@
     <div id="typing"></div>
 
     <div class="input-row">
-      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" oninput="notifyTyping()" />
       <button onclick="sendMessage()" title="Send Message">
         <i class="fas fa-paper-plane"></i>
       </button>
@@ -500,7 +506,7 @@
     // Join room
     socket.emit("join", { username, room });
 
-    // Update user list
+    // Update user list - Now showing actual usernames, with current user highlighted
     socket.on("update_user_list", (data) => {
       const userList = document.getElementById("userList");
       const onlineCount = document.getElementById("onlineCount");
@@ -509,9 +515,9 @@
       data.users.forEach(user => {
         const li = document.createElement("li");
         li.textContent = user;
-        if (user === "You") {
-          li.style.fontWeight = "bold";
-          li.style.color = "#74c0fc";
+        // Highlight the current user's actual username
+        if (user === username) {
+          li.classList.add("current-user");
         }
         userList.appendChild(li);
       });
@@ -519,7 +525,7 @@
       onlineCount.textContent = data.count;
     });
 
-    // Handle incoming messages
+    // Handle incoming messages - Now showing actual usernames for all
     socket.on("message", data => {
       const div = document.createElement("div");
       div.className = "msg";
@@ -527,11 +533,8 @@
       const msg = data.message;
       let formattedMessage = "";
       
-      // Only show "You" if this message is from the current user AND not a system message
+      // Use the actual username from the server data (data.username)
       let sender = data.username;
-      if (data.username === username && data.username !== "System") {
-        sender = "You";
-      }
 
       if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
         formattedMessage = `<img src="${msg}" alt="Image">`;
@@ -578,7 +581,14 @@
     });
 
     function notifyTyping() {
-      socket.emit("typing", { username, room });
+      // Clear the timeout if we receive new input, so we only send "not typing" when truly idle
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socket.emit("typing", { username, room, isTyping: false });
+      }, 1500);
+      
+      // Emit typing status immediately on input
+      socket.emit("typing", { username, room, isTyping: true });
     }
 
     function sendMessage() {
@@ -781,7 +791,9 @@
     });
 
     socket.on("ice-candidate", ({ candidate }) => {
-      peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      if (peerConnection) {
+        peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      }
     });
 
     function toggleMute() {
@@ -792,7 +804,7 @@
     }
 
     function toggleCamera() {
-      if (!localStream) return;
+      if (!localStream || !localStream.getVideoTracks().length) return;
       isCamOn = !isCamOn;
       localStream.getVideoTracks()[0].enabled = isCamOn;
       document.getElementById("camIcon").className = isCamOn ? "fas fa-video" : "fas fa-video-slash";
@@ -841,3 +853,4 @@
   </script>
 </body>
 </html>
+
