@@ -194,19 +194,16 @@ def handle_disconnect():
         print(f"Disconnect error: {e}")
 
 def emit_user_list(room):
-    """Emit personalized user list to each user"""
-    users = list(room_users[room].values())
+    """
+    Emit non-personalized user list to all users in the room.
+    The client will now display the actual username for everyone.
+    """
+    users = sorted(list(room_users[room].values()))
     
+    # Emit the raw, non-personalized list to all SIDs
     for sid, username in room_users[room].items():
-        personalized_users = []
-        for user in sorted(users):
-            if user == username:
-                personalized_users.append("You")
-            else:
-                personalized_users.append(user)
-        
         socketio.emit("update_user_list", {
-            "users": personalized_users,
+            "users": users,
             "count": len(users)
         }, room=sid)
 
@@ -218,14 +215,14 @@ def handle_message(data):
         if not user:
             return
 
-        # Always use the actual username from the session, never "You"
+        # Always use the actual username from the session
         username = bleach.clean(user["username"])
         raw_msg = data.get("message", "")
         
         allowed_tags = ['a', 'br', 'img', 'audio']
         allowed_attributes = {
             'a': ['href', 'download', 'target', 'rel', 'class', 'style'],
-            'img': ['src', 'style'],
+            'img': ['src', 'style', 'alt'],
             'audio': ['controls', 'style']
         }
         message = bleach.clean(raw_msg, tags=allowed_tags, attributes=allowed_attributes, strip=True)
@@ -235,7 +232,7 @@ def handle_message(data):
 
         # Send the actual username to all clients
         emit("message", {
-            "username": username,  # Always the real username
+            "username": username,
             "message": message,
             "timestamp": time.time()
         }, room=user["room"])
@@ -252,10 +249,12 @@ def handle_typing(data):
         if not user:
             return
         
-        emit("typing", {
-            "username": user["username"],
-            "timestamp": time.time()
-        }, room=user["room"], include_self=False)
+        # Only emit if the user is typing
+        if data.get("isTyping"):
+            emit("typing", {
+                "username": user["username"],
+                "timestamp": time.time()
+            }, room=user["room"], include_self=False)
 
     except Exception as e:
         pass
@@ -341,3 +340,4 @@ if __name__ == "__main__":
     print("📍 Server: http://0.0.0.0:5000/")
     print("📊 Health: http://0.0.0.0:5000/health")
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+
