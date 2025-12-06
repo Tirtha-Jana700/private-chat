@@ -526,7 +526,12 @@
 
       const msg = data.message;
       let formattedMessage = "";
-      const sender = (data.username === username && data.username !== "System") ? "You" : data.username;
+      
+      // Only show "You" if this message is from the current user AND not a system message
+      let sender = data.username;
+      if (data.username === username && data.username !== "System") {
+        sender = "You";
+      }
 
       if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
         formattedMessage = `<img src="${msg}" alt="Image">`;
@@ -579,6 +584,8 @@
     function sendMessage() {
       const msg = document.getElementById("messageInput").value.trim();
       if (!msg) return;
+      
+      // Send the message with the actual username (server will broadcast it)
       socket.emit("message", { username, room, message: msg });
       document.getElementById("messageInput").value = "";
       typingStatus.textContent = "";
