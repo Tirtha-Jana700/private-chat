@@ -171,9 +171,16 @@
       margin-top: 0.5rem;
     }
 
-    .msg audio {
+    .msg audio, .msg video {
       width: 100%;
+      border-radius: 12px;
       margin-top: 0.5rem;
+    }
+
+    .msg a.shared-link {
+        word-break: break-all;
+        display: block; /* Ensures it takes full width for visibility */
+        padding: 5px 0;
     }
 
     #typing {
@@ -292,6 +299,19 @@
       margin-top: 0.5rem;
       font-weight: 500;
     }
+    
+    .error-text {
+        color: #ff4d4d !important;
+        font-weight: 700;
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.03); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
 
     #cancelUploadBtn {
       margin: 0.8rem auto 0;
@@ -497,6 +517,7 @@
     const typingStatus = document.getElementById("typing");
     let currentUpload = null;
     let typingTimeout;
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
 
     // Redirect if no credentials
     if (!username || !room || username === "Guest") {
@@ -505,6 +526,15 @@
 
     // Join room
     socket.emit("join", { username, room });
+
+    // Utility to extract filename from URL
+    function getFileNameFromUrl(url) {
+        try {
+            return url.split('/').pop().split('?')[0];
+        } catch (e) {
+            return "File Link";
+        }
+    }
 
     // Update user list - Now showing actual usernames, with current user highlighted
     socket.on("update_user_list", (data) => {
@@ -533,19 +563,45 @@
       const msg = data.message;
       let formattedMessage = "";
       
-      // Use the actual username from the server data (data.username)
       let sender = data.username;
 
-      if (typeof msg === "string" && msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
-        formattedMessage = `<img src="${msg}" alt="Image">`;
-      } else if (msg.match(/\.(mp3|wav|ogg)$/i)) {
-        formattedMessage = `<audio controls><source src="${msg}"></audio>`;
-      } else if (msg.startsWith("http") && msg.match(/\/uploads\//)) {
-        const fileName = msg.split("/").pop();
-        formattedMessage = `📁 <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a>`;
-      } else if (msg.startsWith("http")) {
+      // Check if the message is a link to an uploaded file (from /uploads/)
+      const isUploadedFile = typeof msg === "string" && msg.startsWith("/") && msg.includes("/uploads/");
+
+      if (isUploadedFile) {
+        // Extract the file extension
+        const extensionMatch = msg.match(/\.([a-z0-9]+)(\?.*)?$/i);
+        const extension = extensionMatch ? extensionMatch[1].toLowerCase() : '';
+        const fileName = getFileNameFromUrl(msg);
+
+        // 1. Check for Image
+        if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+          formattedMessage = `<img src="${msg}" alt="${fileName}">`;
+        } 
+        // 2. Check for Video
+        else if (["mp4", "webm", "mov", "ogg"].includes(extension)) {
+          formattedMessage = `<video controls playsinline><source src="${msg}"></video>`;
+        }
+        // 3. Check for Audio
+        else if (["mp3", "wav", "ogg", "aac"].includes(extension)) {
+          formattedMessage = `<audio controls><source src="${msg}"></audio>`;
+        } 
+        // 4. Default to Generic Download Link for ALL other file types
+        else {
+          formattedMessage = `
+            📁 Shared File: 
+            <a href="${msg}" download="${fileName}" class="shared-link">
+              ${fileName}
+            </a>
+          `;
+        }
+      } 
+      // 5. Check for external URLs (not uploaded files)
+      else if (typeof msg === "string" && msg.startsWith("http")) {
         formattedMessage = `<a href="${msg}" target="_blank" class="shared-link">${msg}</a>`;
-      } else {
+      } 
+      // 6. Plain Text
+      else {
         formattedMessage = msg.replace(
           /(https?:\/\/[^\s]+)/g,
           (url) => `<a href="${url}" target="_blank" class="shared-link">${url}</a>`
@@ -581,13 +637,11 @@
     });
 
     function notifyTyping() {
-      // Clear the timeout if we receive new input, so we only send "not typing" when truly idle
       clearTimeout(typingTimeout);
       typingTimeout = setTimeout(() => {
         socket.emit("typing", { username, room, isTyping: false });
       }, 1500);
       
-      // Emit typing status immediately on input
       socket.emit("typing", { username, room, isTyping: true });
     }
 
@@ -595,7 +649,6 @@
       const msg = document.getElementById("messageInput").value.trim();
       if (!msg) return;
       
-      // Send the message with the actual username (server will broadcast it)
       socket.emit("message", { username, room, message: msg });
       document.getElementById("messageInput").value = "";
       typingStatus.textContent = "";
@@ -610,18 +663,36 @@
       const file = this.files[0];
       if (!file) return;
 
-      const formData = new FormData();
-      formData.append("file", file);
-
       const progressBar = document.getElementById("progressBar");
       const progressContainer = document.getElementById("progressContainer");
       const progressText = document.getElementById("progressText");
       const cancelBtn = document.getElementById("cancelUploadBtn");
+      
+      // --- FILE SIZE CHECK (50MB Limit) ---
+      if (file.size > MAX_FILE_SIZE) {
+        // Note: Using visible text feedback instead of the forbidden 'alert()'
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+        progressText.classList.add("error-text");
+        progressText.textContent = "❌ File too large! Max size is 50MB.";
+        cancelBtn.style.display = "none";
+        this.value = ""; // Clear file input
+        setTimeout(() => {
+          progressContainer.style.display = "none";
+          progressText.classList.remove("error-text");
+        }, 3000);
+        return; 
+      }
+      // ------------------------------------
+
+      const formData = new FormData();
+      formData.append("file", file);
 
       progressBar.style.width = "0%";
       progressContainer.style.display = "block";
       cancelBtn.style.display = "block";
-      progressText.textContent = "Uploading... 0%";
+      progressText.textContent = `Uploading ${file.name}... 0%`;
+      progressText.classList.remove("error-text"); // Ensure error class is removed
 
       const xhr = new XMLHttpRequest();
       currentUpload = xhr;
@@ -630,7 +701,7 @@
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
           progressBar.style.width = percent + "%";
-          progressText.textContent = `Uploading... ${percent}%`;
+          progressText.textContent = `Uploading ${file.name}... ${percent}%`;
         }
       };
 
@@ -647,7 +718,8 @@
             progressText.textContent = "Upload complete! ✓";
           }
         } else {
-          progressText.textContent = "Upload failed ❌";
+          progressText.classList.add("error-text");
+          progressText.textContent = `Upload failed (Status: ${xhr.status}) ❌`;
         }
 
         setTimeout(() => {
@@ -659,7 +731,8 @@
 
       xhr.onerror = function() {
         cancelBtn.style.display = "none";
-        progressText.textContent = "Upload failed ❌";
+        progressText.classList.add("error-text");
+        progressText.textContent = "Upload failed (Network Error) ❌";
         setTimeout(() => {
           progressContainer.style.display = "none";
           progressBar.style.width = "0%";
@@ -678,11 +751,13 @@
       if (currentUpload) {
         currentUpload.abort();
         currentUpload = null;
+        document.getElementById("progressText").classList.add("error-text");
         document.getElementById("progressText").textContent = "Upload cancelled ❌";
         document.getElementById("cancelUploadBtn").style.display = "none";
         setTimeout(() => {
           document.getElementById("progressContainer").style.display = "none";
           document.getElementById("progressBar").style.width = "0%";
+          document.getElementById("progressText").classList.remove("error-text");
         }, 1500);
       }
     }
@@ -736,7 +811,7 @@
         })
         .catch(err => {
           console.error("Media error:", err);
-          alert("Could not access camera/microphone");
+          console.error("Could not access camera/microphone:", err);
         });
     }
 
@@ -777,7 +852,7 @@
         })
         .catch(err => {
           console.error("Media error:", err);
-          alert("Could not access camera/microphone");
+          console.error("Could not access camera/microphone:", err);
         });
     }
 
