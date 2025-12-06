@@ -218,6 +218,7 @@ def handle_message(data):
         if not user:
             return
 
+        # Always use the actual username from the session, never "You"
         username = bleach.clean(user["username"])
         raw_msg = data.get("message", "")
         
@@ -232,8 +233,9 @@ def handle_message(data):
         if not message.strip():
             return
 
+        # Send the actual username to all clients
         emit("message", {
-            "username": username,
+            "username": username,  # Always the real username
             "message": message,
             "timestamp": time.time()
         }, room=user["room"])
