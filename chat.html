@@ -204,21 +204,22 @@
 
     /* Upload Progress */
     #progressContainer{
-      margin-top:1rem; padding:1rem; flex-shrink:0;
+      padding:1rem; flex-shrink:0;
       border-radius:18px; border:1px solid rgba(255,255,255,.18);
       background:rgba(10,14,30,.32); backdrop-filter: blur(12px);
-      display:none;
+      display:none; margin-top:0.7rem;
     }
 
     .upload-item {
       margin-bottom:10px; padding:10px; border-radius:12px; 
       background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+      position:relative;
     }
     .upload-item:last-child { margin-bottom:0; }
 
     .upload-info { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:.85rem; }
-    .upload-name { color:var(--muted); font-weight:500; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .upload-percent { color:var(--accent); font-weight:600; margin-left:8px; }
+    .upload-name { color:var(--muted); font-weight:500; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px; }
+    .upload-percent { color:var(--accent); font-weight:600; margin-left:8px; min-width:35px; text-align:right; }
 
     .progress-bar-wrapper{
       width:100%; height:12px; border-radius:999px; overflow:hidden;
@@ -234,10 +235,30 @@
     }
     @keyframes gradientSlide{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
-    .upload-status { font-size:.8rem; margin-top:6px; display:flex; align-items:center; gap:6px; }
+    .upload-status { font-size:.8rem; margin-top:6px; display:flex; align-items:center; gap:6px; justify-content:space-between; }
+    .upload-status-text { flex:1; }
     .status-success { color:#10b981; }
     .status-error { color:#ff6b6b; }
     .status-uploading { color:var(--muted); }
+
+    .upload-cancel-btn {
+      min-width:28px; min-height:28px; width:28px; height:28px; padding:0;
+      background:rgba(255,77,77,.2);
+      border:1px solid rgba(255,77,77,.5);
+      border-radius:6px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#ff6b6b;
+      font-size:0.8rem;
+      transition:all .2s ease;
+      flex-shrink:0;
+    }
+    .upload-cancel-btn:hover {
+      background:rgba(255,77,77,.4);
+      border-color:rgba(255,77,77,.8);
+    }
 
     .upload-controls { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; justify-content:flex-end; }
     #clearCompletedBtn, #cancelAllBtn { min-height:36px; padding:.5rem 1rem; font-size:.8rem; }
@@ -348,6 +369,19 @@
     </div>
 
     <div id="messages"></div>
+    
+    <div id="progressContainer">
+      <div id="uploadsList"></div>
+      <div class="upload-controls">
+        <button id="clearCompletedBtn" onclick="clearCompletedUploads()" style="display:none;">
+          <i class="fas fa-check"></i> Clear Completed
+        </button>
+        <button id="cancelAllBtn" onclick="cancelAllUploads()" style="display:none;">
+          <i class="fas fa-times"></i> Cancel All
+        </button>
+      </div>
+    </div>
+    
     <div id="typing" aria-live="polite">
       <span class="typing-dots"><span></span><span></span><span></span></span>
       <span id="typingText"></span>
@@ -364,18 +398,6 @@
         <button onclick="startCall(true)" title="Video Call"><i class="fas fa-video"></i><span class="btn-label">Video</span></button>
       </div>
       <input type="file" id="file" multiple />
-    </div>
-
-    <div id="progressContainer">
-      <div id="uploadsList"></div>
-      <div class="upload-controls">
-        <button id="clearCompletedBtn" onclick="clearCompletedUploads()" style="display:none;">
-          <i class="fas fa-check"></i> Clear Completed
-        </button>
-        <button id="cancelAllBtn" onclick="cancelAllUploads()" style="display:none;">
-          <i class="fas fa-times"></i> Cancel All
-        </button>
-      </div>
     </div>
 
   </div>
@@ -486,15 +508,18 @@
           <div class="progress-bar" id="bar-${id}" style="width:0%"></div>
         </div>`;
         html += `<div class="upload-status status-uploading" id="status-${id}">
-          <i class="fas fa-spinner fa-spin"></i> Uploading...
+          <span class="upload-status-text"><i class="fas fa-spinner fa-spin"></i> Uploading...</span>
+          <button class="upload-cancel-btn" onclick="cancelSingleUpload(${id})" title="Cancel upload">
+            <i class="fas fa-times"></i>
+          </button>
         </div>`;
       } else if (status === "success") {
         html += `<div class="upload-status status-success" id="status-${id}">
-          <i class="fas fa-check-circle"></i> Uploaded successfully
+          <span class="upload-status-text"><i class="fas fa-check-circle"></i> Uploaded successfully</span>
         </div>`;
       } else {
         html += `<div class="upload-status status-error" id="status-${id}">
-          <i class="fas fa-exclamation-circle"></i> ${errorMsg}
+          <span class="upload-status-text"><i class="fas fa-exclamation-circle"></i> ${errorMsg}</span>
         </div>`;
       }
 
@@ -513,16 +538,16 @@
       const item = document.getElementById(`upload-${id}`);
       if (item) {
         item.style.animation = "fadeOutUpload 0.3s ease forwards";
-        setTimeout(() => item.remove(), 300);
+        setTimeout(() => {
+          item.remove();
+          // Check if all uploads are done
+          if (currentUploads.size === 0) {
+            document.getElementById("progressContainer").style.display = "none";
+            document.getElementById("uploadsList").innerHTML = "";
+          }
+        }, 300);
       }
       currentUploads.delete(id);
-      
-      if (currentUploads.size === 0) {
-        setTimeout(() => {
-          document.getElementById("progressContainer").style.display = "none";
-          document.getElementById("uploadsList").innerHTML = "";
-        }, 500);
-      }
     }
 
     function uploadFile(file, uploadId) {
@@ -567,6 +592,16 @@
       updateControlButtons();
     }
 
+    function cancelSingleUpload(id) {
+      const upload = currentUploads.get(id);
+      if (upload && upload.xhr && upload.status === "uploading") {
+        upload.xhr.abort();
+        addUploadItem(id, "File", "error", "Cancelled by user");
+        currentUploads.set(id, { status: "error" });
+        updateControlButtons();
+      }
+    }
+
     function cancelAllUploads() {
       currentUploads.forEach((upload, id) => {
         if (upload.xhr && upload.status === "uploading") {
@@ -580,7 +615,7 @@
     function clearCompletedUploads() {
       const toRemove = [];
       currentUploads.forEach((upload, id) => {
-        if (upload.status === "success") {
+        if (upload.status === "success" || upload.status === "error") {
           toRemove.push(id);
         }
       });
@@ -590,7 +625,7 @@
 
     function updateControlButtons() {
       const hasInProgress = Array.from(currentUploads.values()).some(u => u.status === "uploading");
-      const hasCompleted = Array.from(currentUploads.values()).some(u => u.status === "success");
+      const hasCompleted = Array.from(currentUploads.values()).some(u => u.status === "success" || u.status === "error");
       
       document.getElementById("cancelAllBtn").style.display = hasInProgress ? "flex" : "none";
       document.getElementById("clearCompletedBtn").style.display = hasCompleted ? "flex" : "none";
@@ -826,6 +861,9 @@
           peerConnection.createOffer().then(offer => {
             peerConnection.setLocalDescription(offer);
             socket.emit("offer", { offer, username, room, video });
+            // Notify call started
+            const callType = video ? "📹 Video" : "📞 Voice";
+            socket.emit("message", { username: "System", room, message: `${callType} call started...` });
           });
         })
         .catch(err => {
@@ -868,6 +906,9 @@
           peerConnection.createAnswer().then(answer => {
             peerConnection.setLocalDescription(answer);
             socket.emit("answer", { answer, room });
+            // Notify call accepted
+            const callType = isVideoCall ? "📹 Video" : "📞 Voice";
+            socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
           });
 
           setCallUI(true, isVideoCall);
@@ -915,17 +956,35 @@
       }
       document.getElementById("remoteVideo").srcObject = null;
       document.getElementById("localVideo").srcObject = null;
+      
+      // Notify call ended before UI reset
+      if (isVideoCall || document.getElementById("videoArea").classList.contains("active")) {
+        socket.emit("message", { username: "System", room, message: "📵 Call ended" });
+      }
+      
       setCallUI(false, false);
+      
+      // Emit call ended and broadcast to others
       socket.emit("call-ended", { username, room });
       
+      // Reset all call states
       isMuted = false;
       isCamOn = true;
+      isVideoCall = false;
       document.getElementById("micIcon").className = "fas fa-microphone";
       document.getElementById("camIcon").className = "fas fa-video";
+      
+      // Reset pending offer
+      window.pendingOffer = null;
     }
 
-    socket.on("call-ended", endCall);
-    socket.on("call-rejected", endCall);
+    socket.on("call-ended", (data) => {
+      endCall();
+    });
+
+    socket.on("call-rejected", (data) => {
+      endCall();
+    });
 
     window.addEventListener("beforeunload", () => socket.emit("leave", { username, room }));
 
