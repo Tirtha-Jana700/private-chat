@@ -202,12 +202,13 @@
     button:active, label:active{ transform:translateY(0); }
     #file{ display:none; }
 
-    /* Upload Progress - Expanded Scrollable Flow */
+    /* Upload Progress - with Absolute/Sticky Action Controls */
     #progressContainer{
-      padding:1rem; flex-shrink:0;
+      padding:1rem; padding-bottom:3.2rem; flex-shrink:0;
       border-radius:18px; border:1px solid rgba(255,255,255,.18);
-      background:rgba(10,14,30,.75); backdrop-filter: blur(14px);
-      display:none; margin-bottom:0.7rem; max-height: 180px; overflow-y: auto;
+      background:rgba(10,14,30,.88); backdrop-filter: blur(14px);
+      display:none; margin-bottom:0.7rem; max-height: 160px; overflow-y: auto;
+      position: relative;
     }
 
     .upload-item {
@@ -260,8 +261,19 @@
       border-color:rgba(255,77,77,.8);
     }
 
-    .upload-controls { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; justify-content:flex-end; }
-    #clearCompletedBtn, #cancelAllBtn { min-height:36px; padding:.5rem 1rem; font-size:.8rem; }
+    .upload-controls { 
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      display: flex; 
+      gap: 8px; 
+      justify-content: flex-end;
+      background: rgba(10,14,30,0.95);
+      padding: 4px 8px;
+      border-radius: 10px;
+      z-index: 5;
+    }
+    #clearCompletedBtn, #cancelAllBtn { min-height:30px; padding:.3rem .8rem; font-size:.75rem; }
 
     /* ---------- Call surface ---------- */
     #videoArea{
@@ -765,7 +777,7 @@
       document.getElementById("theme-icon").textContent = "☀️";
     }
 
-    // ========== WebRTC LOGIC (FIXED MULTI-CALL BUG) ==========
+    // ========== WebRTC LOGIC ==========
     let localStream = null;
     let peerConnection = null;
     const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
@@ -923,6 +935,7 @@
 
     function rejectCall() {
       document.getElementById("incomingCall").style.display = "none";
+      socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
       socket.emit("reject-call", { username, room });
       cleanupCallStates();
     }
@@ -989,6 +1002,7 @@
     });
 
     socket.on("call-rejected", () => {
+      socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
       cleanupCallStates();
     });
 
