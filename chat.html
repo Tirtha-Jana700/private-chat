@@ -458,6 +458,7 @@
     let uploadCounter = 0;
     const MAX_FILE_SIZE = 50 * 1024 * 1024;
     let isCaller = false; // Tracks if current client initiated the call
+    let callConnectedLogged = false; // Flag to prevent duplicate connection logs
 
     if (!username || !room || username === "Guest") {
       window.location.href = "/";
@@ -861,6 +862,7 @@
     function startCall(video) {
       isVideoCall = video;
       isCaller = true;
+      callConnectedLogged = false; // Reset connection state flag
       setCallUI(true, video);
 
       navigator.mediaDevices.getUserMedia({ audio: true, video: video })
@@ -880,7 +882,6 @@
           peerConnection.createOffer().then(offer => {
             peerConnection.setLocalDescription(offer);
             socket.emit("offer", { offer, username, room, video });
-            // Removed system message spam on initial start call trigger to avoid multiple repeated message entries
           });
         })
         .catch(err => {
@@ -906,6 +907,7 @@
 
     function acceptCall() {
       document.getElementById("incomingCall").style.display = "none";
+      callConnectedLogged = false; // Reset flag for new call
 
       navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall })
         .then(stream => {
@@ -921,14 +923,19 @@
           };
 
           stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-          peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
           
-          peerConnection.createAnswer().then(answer => {
-            peerConnection.setLocalDescription(answer);
-            socket.emit("answer", { answer, room });
-            const callType = isVideoCall ? "📹 Video" : "📞 Voice";
-            socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
-          });
+          peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer))
+            .then(() => peerConnection.createAnswer())
+            .then(answer => {
+              peerConnection.setLocalDescription(answer);
+              socket.emit("answer", { answer, room });
+              
+              if (!callConnectedLogged) {
+                callConnectedLogged = true;
+                const callType = isVideoCall ? "📹 Video" : "📞 Voice";
+                socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
+              }
+            });
 
           setCallUI(true, isVideoCall);
         })
@@ -945,10 +952,14 @@
     }
 
     socket.on("answer", ({ answer }) => {
-      if (peerConnection) {
-        peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        const callType = isVideoCall ? "📹 Video" : "📞 Voice";
-        socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
+      if (peerConnection && peerConnection.signalingState !== "stable") {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).then(() => {
+          if (!callConnectedLogged) {
+            callConnectedLogged = true;
+            const callType = isVideoCall ? "📹 Video" : "📞 Voice";
+            socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
+          }
+        });
       }
     });
 
@@ -991,6 +1002,7 @@
       isCamOn = true;
       isVideoCall = false;
       isCaller = false;
+      callConnectedLogged = false; // Reset connection state flag
       document.getElementById("micIcon").className = "fas fa-microphone";
       document.getElementById("camIcon").className = "fas fa-video";
       window.pendingOffer = null;
