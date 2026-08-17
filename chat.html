@@ -202,12 +202,12 @@
     button:active, label:active{ transform:translateY(0); }
     #file{ display:none; }
 
-    /* Upload Progress - with Absolute/Sticky Action Controls */
+    /* Upload Progress - with Absolute Positioned Action Controls */
     #progressContainer{
-      padding:1rem; padding-bottom:3.2rem; flex-shrink:0;
+      padding:1rem; padding-bottom:3.5rem; flex-shrink:0;
       border-radius:18px; border:1px solid rgba(255,255,255,.18);
       background:rgba(10,14,30,.88); backdrop-filter: blur(14px);
-      display:none; margin-bottom:0.7rem; max-height: 160px; overflow-y: auto;
+      display:none; margin-bottom:0.7rem; max-height: 180px; overflow-y: auto;
       position: relative;
     }
 
@@ -274,6 +274,7 @@
       z-index: 5;
     }
     #clearCompletedBtn, #cancelAllBtn { min-height:30px; padding:.3rem .8rem; font-size:.75rem; position: absolute; bottom: 8px; right: 12px; }
+    #cancelAllBtn { right: 145px; } /* Positioning controls dynamically when both show */
 
     /* ---------- Call surface ---------- */
     #videoArea{
@@ -385,11 +386,11 @@
     <div id="progressContainer">
       <div id="uploadsList"></div>
       <div class="upload-controls">
-        <button id="clearCompletedBtn" onclick="clearCompletedUploads()" style="display:none;">
-          <i class="fas fa-check"></i> Clear Completed
-        </button>
         <button id="cancelAllBtn" onclick="cancelAllUploads()" style="display:none;">
           <i class="fas fa-times"></i> Cancel All
+        </button>
+        <button id="clearCompletedBtn" onclick="clearCompletedUploads()" style="display:none;">
+          <i class="fas fa-check"></i> Clear Completed
         </button>
       </div>
     </div>
@@ -456,6 +457,7 @@
     let currentUploads = new Map();
     let uploadCounter = 0;
     const MAX_FILE_SIZE = 50 * 1024 * 1024;
+    let isCaller = false; // Tracks if current client initiated the call
 
     if (!username || !room || username === "Guest") {
       window.location.href = "/";
@@ -858,6 +860,7 @@
 
     function startCall(video) {
       isVideoCall = video;
+      isCaller = true;
       setCallUI(true, video);
 
       navigator.mediaDevices.getUserMedia({ audio: true, video: video })
@@ -877,19 +880,20 @@
           peerConnection.createOffer().then(offer => {
             peerConnection.setLocalDescription(offer);
             socket.emit("offer", { offer, username, room, video });
-            const callType = video ? "📹 Video" : "📞 Voice";
-            socket.emit("message", { username, room, message: `${callType} call started...` });
+            // Removed system message spam on initial start call trigger to avoid multiple repeated message entries
           });
         })
         .catch(err => {
           console.error("Media error:", err);
           setCallUI(false, false);
+          isCaller = false;
         });
     }
 
     socket.on("offer", ({ offer, username: caller, video }) => {
       isVideoCall = video;
       window.pendingOffer = offer;
+      isCaller = false;
       
       const callerName = document.getElementById("callerName");
       callerName.textContent = `${caller} is calling...`;
@@ -935,7 +939,7 @@
 
     function rejectCall() {
       document.getElementById("incomingCall").style.display = "none";
-      socket.emit("message", { username, room, message: "❌ Call rejected" });
+      socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
       socket.emit("reject-call", { username, room });
       cleanupCallStates();
     }
@@ -943,6 +947,8 @@
     socket.on("answer", ({ answer }) => {
       if (peerConnection) {
         peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        const callType = isVideoCall ? "📹 Video" : "📞 Voice";
+        socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
       }
     });
 
@@ -984,6 +990,7 @@
       isMuted = false;
       isCamOn = true;
       isVideoCall = false;
+      isCaller = false;
       document.getElementById("micIcon").className = "fas fa-microphone";
       document.getElementById("camIcon").className = "fas fa-video";
       window.pendingOffer = null;
@@ -1002,7 +1009,9 @@
     });
 
     socket.on("call-rejected", () => {
-      socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
+      if (isCaller) {
+        socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
+      }
       cleanupCallStates();
     });
 
