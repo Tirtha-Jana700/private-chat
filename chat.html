@@ -202,12 +202,12 @@
     button:active, label:active{ transform:translateY(0); }
     #file{ display:none; }
 
-    /* Upload Progress */
+    /* Upload Progress - Expanded Scrollable Flow */
     #progressContainer{
       padding:1rem; flex-shrink:0;
       border-radius:18px; border:1px solid rgba(255,255,255,.18);
-      background:rgba(10,14,30,.32); backdrop-filter: blur(12px);
-      display:none; margin-top:0.7rem;
+      background:rgba(10,14,30,.75); backdrop-filter: blur(14px);
+      display:none; margin-bottom:0.7rem; max-height: 180px; overflow-y: auto;
     }
 
     .upload-item {
@@ -468,8 +468,6 @@
       if (!files.length) return;
 
       const container = document.getElementById("progressContainer");
-      const uploadsList = document.getElementById("uploadsList");
-      
       container.style.display = "block";
 
       files.forEach(file => {
@@ -525,6 +523,7 @@
 
       item.innerHTML = html;
       currentUploads.set(id, { status });
+      updateControlButtons();
     }
 
     function updateUploadProgress(id, percent) {
@@ -540,7 +539,6 @@
         item.style.animation = "fadeOutUpload 0.3s ease forwards";
         setTimeout(() => {
           item.remove();
-          // Check if all uploads are done
           if (currentUploads.size === 0) {
             document.getElementById("progressContainer").style.display = "none";
             document.getElementById("uploadsList").innerHTML = "";
@@ -548,6 +546,7 @@
         }, 300);
       }
       currentUploads.delete(id);
+      updateControlButtons();
     }
 
     function uploadFile(file, uploadId) {
@@ -596,20 +595,25 @@
       const upload = currentUploads.get(id);
       if (upload && upload.xhr && upload.status === "uploading") {
         upload.xhr.abort();
-        addUploadItem(id, "File", "error", "Cancelled by user");
-        currentUploads.set(id, { status: "error" });
-        updateControlButtons();
       }
+      addUploadItem(id, "File", "error", "Cancelled");
+      currentUploads.set(id, { status: "error" });
+      updateControlButtons();
+      setTimeout(() => removeUploadItem(id), 1500);
     }
 
     function cancelAllUploads() {
       currentUploads.forEach((upload, id) => {
         if (upload.xhr && upload.status === "uploading") {
           upload.xhr.abort();
-          addUploadItem(id, "Unknown", "error", "Cancelled");
         }
+        addUploadItem(id, "File", "error", "Cancelled");
+        currentUploads.set(id, { status: "error" });
       });
       updateControlButtons();
+      setTimeout(() => {
+        currentUploads.forEach((_, id) => removeUploadItem(id));
+      }, 1500);
     }
 
     function clearCompletedUploads() {
@@ -761,8 +765,9 @@
       document.getElementById("theme-icon").textContent = "☀️";
     }
 
-    // ========== WebRTC LOGIC ==========
-    let localStream, peerConnection;
+    // ========== WebRTC LOGIC (FIXED MULTI-CALL BUG) ==========
+    let localStream = null;
+    let peerConnection = null;
     const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
     let isVideoCall = false;
     let isMuted = false;
@@ -770,7 +775,6 @@
     let pipOffset = { x: 0, y: 0 };
     let isDraggingPIP = false;
 
-    // ---- Call UI helpers ----
     function setCallUI(active, video) {
       const area = document.getElementById("videoArea");
       area.classList.toggle("active", active);
@@ -817,7 +821,6 @@
       videoArea.style.cursor = "move";
     });
 
-    // Touch support
     videoArea.addEventListener("touchstart", (e) => {
       if (videoArea.classList.contains("pip") && e.touches.length === 1) {
         isDraggingPIP = true;
@@ -858,10 +861,10 @@
             document.getElementById("remoteVideo").srcObject = e.streams[0];
           };
           stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+          
           peerConnection.createOffer().then(offer => {
             peerConnection.setLocalDescription(offer);
             socket.emit("offer", { offer, username, room, video });
-            // Notify call started
             const callType = video ? "📹 Video" : "📞 Voice";
             socket.emit("message", { username: "System", room, message: `${callType} call started...` });
           });
@@ -903,10 +906,10 @@
 
           stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
           peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
+          
           peerConnection.createAnswer().then(answer => {
             peerConnection.setLocalDescription(answer);
             socket.emit("answer", { answer, room });
-            // Notify call accepted
             const callType = isVideoCall ? "📹 Video" : "📞 Voice";
             socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
           });
@@ -921,14 +924,19 @@
     function rejectCall() {
       document.getElementById("incomingCall").style.display = "none";
       socket.emit("reject-call", { username, room });
+      cleanupCallStates();
     }
 
     socket.on("answer", ({ answer }) => {
-      if (peerConnection) peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      if (peerConnection) {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      }
     });
 
     socket.on("ice-candidate", ({ candidate }) => {
-      if (peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      if (peerConnection) {
+        peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error(e));
+      }
     });
 
     function toggleMute() {
@@ -945,7 +953,7 @@
       document.getElementById("camIcon").className = isCamOn ? "fas fa-video" : "fas fa-video-slash";
     }
 
-    function endCall() {
+    function cleanupCallStates() {
       if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
@@ -956,46 +964,42 @@
       }
       document.getElementById("remoteVideo").srcObject = null;
       document.getElementById("localVideo").srcObject = null;
-      
-      // Notify call ended before UI reset
-      if (isVideoCall || document.getElementById("videoArea").classList.contains("active")) {
-        socket.emit("message", { username: "System", room, message: "📵 Call ended" });
-      }
+      document.getElementById("incomingCall").style.display = "none";
       
       setCallUI(false, false);
       
-      // Emit call ended and broadcast to others
-      socket.emit("call-ended", { username, room });
-      
-      // Reset all call states
       isMuted = false;
       isCamOn = true;
       isVideoCall = false;
       document.getElementById("micIcon").className = "fas fa-microphone";
       document.getElementById("camIcon").className = "fas fa-video";
-      
-      // Reset pending offer
       window.pendingOffer = null;
     }
 
-    socket.on("call-ended", (data) => {
-      endCall();
+    function endCall() {
+      if (document.getElementById("videoArea").classList.contains("active") || window.pendingOffer) {
+        socket.emit("message", { username: "System", room, message: "📵 Call ended" });
+      }
+      socket.emit("call-ended", { username, room });
+      cleanupCallStates();
+    }
+
+    socket.on("call-ended", () => {
+      cleanupCallStates();
     });
 
-    socket.on("call-rejected", (data) => {
-      endCall();
+    socket.on("call-rejected", () => {
+      cleanupCallStates();
     });
 
     window.addEventListener("beforeunload", () => socket.emit("leave", { username, room }));
 
-    // Add fade out animation
     const style = document.createElement('style');
     style.textContent = `
       @keyframes fadeOutUpload { from{opacity:1; transform:translateY(0)} to{opacity:0; transform:translateY(-10px)} }
     `;
     document.head.appendChild(style);
 
-    // Prevent double-tap zoom
     let lastTouchEnd = 0;
     document.addEventListener('touchend', (e) => {
       const now = Date.now();
