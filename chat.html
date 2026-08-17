@@ -273,7 +273,7 @@
       border-radius: 10px;
       z-index: 5;
     }
-    #clearCompletedBtn, #cancelAllBtn { min-height:30px; padding:.3rem .8rem; font-size:.75rem; }
+    #clearCompletedBtn, #cancelAllBtn { min-height:30px; padding:.3rem .8rem; font-size:.75rem; position: absolute; bottom: 8px; right: 12px; }
 
     /* ---------- Call surface ---------- */
     #videoArea{
@@ -878,7 +878,7 @@
             peerConnection.setLocalDescription(offer);
             socket.emit("offer", { offer, username, room, video });
             const callType = video ? "📹 Video" : "📞 Voice";
-            socket.emit("message", { username: "System", room, message: `${callType} call started...` });
+            socket.emit("message", { username, room, message: `${callType} call started...` });
           });
         })
         .catch(err => {
@@ -935,7 +935,7 @@
 
     function rejectCall() {
       document.getElementById("incomingCall").style.display = "none";
-      socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
+      socket.emit("message", { username, room, message: "❌ Call rejected" });
       socket.emit("reject-call", { username, room });
       cleanupCallStates();
     }
