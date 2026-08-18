@@ -128,9 +128,11 @@
     .shared-link{ color:var(--accent); text-decoration:underline; word-break:break-word; cursor:pointer; }
 
     .system-msg {
-      text-align: center; font-style: italic; color: #a0a0a0; background: rgba(255, 255, 255, 0.05);
-      padding: 8px; border-radius: 12px; margin:.4rem 0;
+      text-align: center; font-style: normal; font-size: 0.85rem; color: #a5d8ff; background: rgba(255, 255, 255, 0.08);
+      padding: 8px 12px; border-radius: 12px; margin:.6rem auto; max-width: 85%;
+      border: 1px solid rgba(165, 216, 255, 0.2);
     }
+    .system-msg i { margin-right: 6px; }
 
     #typing{
       font-size:.82rem; color:var(--muted); min-height:1.35rem; margin-bottom:.5rem;
@@ -457,14 +459,23 @@
     let currentUploads = new Map();
     let uploadCounter = 0;
     const MAX_FILE_SIZE = 50 * 1024 * 1024;
-    let isCaller = false; // Tracks if current client initiated the call
-    let callConnectedLogged = false; // Flag to prevent duplicate connection logs
+    let isCaller = false; 
+    let callConnectedLogged = false; 
 
     if (!username || !room || username === "Guest") {
       window.location.href = "/";
     }
 
     socket.emit("join", { username, room });
+
+    // Helper to append a localized system message straight to the chat window (prevents server duplication)
+    function addLocalSystemMessage(htmlContent) {
+      const div = document.createElement("div");
+      div.className = "system-msg";
+      div.innerHTML = htmlContent;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
 
     // ========== FILE HANDLING ==========
     function getFileNameFromUrl(url) {
@@ -862,7 +873,7 @@
     function startCall(video) {
       isVideoCall = video;
       isCaller = true;
-      callConnectedLogged = false; // Reset connection state flag
+      callConnectedLogged = false; 
       setCallUI(true, video);
 
       navigator.mediaDevices.getUserMedia({ audio: true, video: video })
@@ -907,7 +918,7 @@
 
     function acceptCall() {
       document.getElementById("incomingCall").style.display = "none";
-      callConnectedLogged = false; // Reset flag for new call
+      callConnectedLogged = false; 
 
       navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall })
         .then(stream => {
@@ -932,8 +943,8 @@
               
               if (!callConnectedLogged) {
                 callConnectedLogged = true;
-                const callType = isVideoCall ? "📹 Video" : "📞 Voice";
-                socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
+                const callType = isVideoCall ? '<i class="fas fa-video"></i> Video' : '<i class="fas fa-phone"></i> Voice';
+                addLocalSystemMessage(`${callType} call connected`);
               }
             });
 
@@ -946,7 +957,7 @@
 
     function rejectCall() {
       document.getElementById("incomingCall").style.display = "none";
-      socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
+      addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> You declined the call');
       socket.emit("reject-call", { username, room });
       cleanupCallStates();
     }
@@ -956,8 +967,8 @@
         peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).then(() => {
           if (!callConnectedLogged) {
             callConnectedLogged = true;
-            const callType = isVideoCall ? "📹 Video" : "📞 Voice";
-            socket.emit("message", { username: "System", room, message: `${callType} call connected!` });
+            const callType = isVideoCall ? '<i class="fas fa-video"></i> Video' : '<i class="fas fa-phone"></i> Voice';
+            addLocalSystemMessage(`${callType} call connected`);
           }
         });
       }
@@ -1002,7 +1013,7 @@
       isCamOn = true;
       isVideoCall = false;
       isCaller = false;
-      callConnectedLogged = false; // Reset connection state flag
+      callConnectedLogged = false; 
       document.getElementById("micIcon").className = "fas fa-microphone";
       document.getElementById("camIcon").className = "fas fa-video";
       window.pendingOffer = null;
@@ -1010,19 +1021,24 @@
 
     function endCall() {
       if (document.getElementById("videoArea").classList.contains("active") || window.pendingOffer) {
-        socket.emit("message", { username: "System", room, message: "📵 Call ended" });
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Call ended');
       }
       socket.emit("call-ended", { username, room });
       cleanupCallStates();
     }
 
     socket.on("call-ended", () => {
+      if (document.getElementById("videoArea").classList.contains("active")) {
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Call ended');
+      } else if (window.pendingOffer) {
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Missed call');
+      }
       cleanupCallStates();
     });
 
     socket.on("call-rejected", () => {
       if (isCaller) {
-        socket.emit("message", { username: "System", room, message: "❌ Call rejected" });
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Call was declined');
       }
       cleanupCallStates();
     });
