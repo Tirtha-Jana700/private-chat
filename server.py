@@ -20,11 +20,12 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'mp3', 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(STATIC_FOLDER, exist_ok=True)
 
-# User management
+# User & Grace Period Management
 user_sessions = {}
 last_disconnect = {}
 room_users = defaultdict(dict)
 active_calls = defaultdict(dict)
+pending_disconnects = {} # Stores delayed disconnect jobs
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -43,7 +44,7 @@ socketio = SocketIO(
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- File serving routes ---
+# --- File Serving Routes ---
 @app.route("/")
 def index():
     return send_file("login.html")
@@ -60,7 +61,7 @@ def uploaded_file(filename):
 def static_files(filename):
     return send_from_directory(STATIC_FOLDER, filename)
 
-# --- Enhanced file upload ---
+# --- File Upload Route ---
 @app.route("/upload", methods=["POST"])
 def upload_file():
     try:
@@ -68,7 +69,6 @@ def upload_file():
             return jsonify({"error": "No file provided"}), 400
             
         file = request.files['file']
-        
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
 
@@ -79,28 +79,23 @@ def upload_file():
         if not safe_name:
             return jsonify({"error": "Invalid filename"}), 400
 
-        # Generate unique filename
-        name, ext = os.path.splitext(safe_name)
         unique_id = str(uuid.uuid4())[:8]
         unique_filename = f"{unique_id}_{safe_name}"
-
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
-
-        file_size = os.path.getsize(file_path)
 
         return jsonify({
             "url": f"/uploads/{unique_filename}",
             "original_name": safe_name,
-            "size": file_size,
+            "size": os.path.getsize(file_path),
             "success": True
         }), 200
 
     except Exception as e:
-        print(f"File upload error: {e}")
+        print(f"Upload error: {e}")
         return jsonify({"error": "Upload failed"}), 500
 
-# --- Socket events ---
+# --- Socket Events ---
 @socketio.on("connect")
 def handle_connect():
     print(f"Client connected: {request.sid}")
@@ -116,22 +111,28 @@ def handle_join(data):
             emit("error", {"message": "Invalid username or room"})
             return
 
+        # Cancel pending disconnect timer if user reconnected before timer elapsed
+        if username in pending_disconnects:
+            eventlet.cancel(pending_disconnects[username])
+            del pending_disconnects[username]
+
         join_room(room)
         user_sessions[sid] = {"username": username, "room": room}
         room_users[room][sid] = username
 
         now = time.time()
         last = last_disconnect.get(username, 0)
-        rejoined = now - last <= 5
+        rejoined = (now - last <= 5)
 
+        # Send status update with explicit type flags for frontend rendering
         if rejoined:
-            emit("message", {"username": "System", "message": "🔄 You reconnected to the chat"})
-            msg = f"🔄 {username} reconnected"
+            emit("message", {"type": "system", "icon": "refresh-cw", "message": "You reconnected to the chat"})
+            msg = f"{username} reconnected"
+            emit("message", {"type": "system", "icon": "refresh-cw", "message": msg}, room=room, include_self=False)
         else:
-            emit("message", {"username": "System", "message": "✅ You joined the chat"})
-            msg = f"✅ {username} joined the chat"
-        
-        emit("message", {"username": "System", "message": msg}, room=room, include_self=False)
+            emit("message", {"type": "system", "icon": "check-circle", "message": "You joined the chat"})
+            msg = f"{username} joined the chat"
+            emit("message", {"type": "system", "icon": "check-circle", "message": msg}, room=room, include_self=False)
 
         if username in last_disconnect:
             del last_disconnect[username]
@@ -156,11 +157,13 @@ def handle_leave(data):
         leave_room(room)
         if sid in room_users[room]:
             del room_users[room][sid]
+        if sid in user_sessions:
+            del user_sessions[sid]
         
         last_disconnect[username] = time.time()
         
-        emit("message", {"username": "System", "message": "🚪 You left the chat"})
-        emit("message", {"username": "System", "message": f"🚪 {username} left the chat"}, room=room, include_self=False)
+        emit("message", {"type": "system", "icon": "log-out", "message": "You left the chat"})
+        emit("message", {"type": "system", "icon": "log-out", "message": f"{username} left the chat"}, room=room, include_self=False)
         
         emit_user_list(room)
 
@@ -183,29 +186,30 @@ def handle_disconnect():
             del room_users[room][sid]
         if sid in user_sessions:
             del user_sessions[sid]
-        
+
         last_disconnect[username] = time.time()
-        
-        emit("message", {"username": "System", "message": f"🚪 {username} disconnected"}, room=room)
-        
-        emit_user_list(room)
+
+        # Delayed disconnection notification function
+        def delayed_disconnect_notice(target_room, target_user):
+            eventlet.sleep(3.0) # Wait 3 seconds before broadcasting disconnection
+            if target_user in pending_disconnects:
+                emit("message", {"type": "system", "icon": "log-out", "message": f"{target_user} disconnected"}, room=target_room)
+                emit_user_list(target_room)
+                del pending_disconnects[target_user]
+
+        # Schedule delayed disconnect execution
+        thread = eventlet.spawn(delayed_disconnect_notice, room, username)
+        pending_disconnects[username] = thread
 
     except Exception as e:
         print(f"Disconnect error: {e}")
 
 def emit_user_list(room):
-    """
-    Emit non-personalized user list to all users in the room.
-    The client will now display the actual username for everyone.
-    """
     users = sorted(list(room_users[room].values()))
-    
-    # Emit the raw, non-personalized list to all SIDs
-    for sid, username in room_users[room].items():
-        socketio.emit("update_user_list", {
-            "users": users,
-            "count": len(users)
-        }, room=sid)
+    socketio.emit("update_user_list", {
+        "users": users,
+        "count": len(users)
+    }, room=room)
 
 @socketio.on("message")
 def handle_message(data):
@@ -215,7 +219,6 @@ def handle_message(data):
         if not user:
             return
 
-        # Always use the actual username from the session
         username = bleach.clean(user["username"])
         raw_msg = data.get("message", "")
         
@@ -230,8 +233,8 @@ def handle_message(data):
         if not message.strip():
             return
 
-        # Send the actual username to all clients
         emit("message", {
+            "type": "chat",
             "username": username,
             "message": message,
             "timestamp": time.time()
@@ -239,27 +242,21 @@ def handle_message(data):
 
     except Exception as e:
         print(f"Message error: {e}")
-        emit("error", {"message": "Failed to send message"})
 
 @socketio.on("typing")
 def handle_typing(data):
     try:
         sid = request.sid
         user = user_sessions.get(sid)
-        if not user:
-            return
-        
-        # Only emit if the user is typing
-        if data.get("isTyping"):
+        if user and data.get("isTyping"):
             emit("typing", {
                 "username": user["username"],
                 "timestamp": time.time()
             }, room=user["room"], include_self=False)
-
     except Exception as e:
         pass
 
-# --- WebRTC signaling ---
+# --- WebRTC Signaling ---
 @socketio.on("offer")
 def handle_offer(data):
     try:
@@ -278,7 +275,7 @@ def handle_offer(data):
             "type": "video" if data.get("video") else "audio",
             "timestamp": time.time()
         }
-
+        emit("message", {"type": "system", "icon": "video", "message": "Video call connected"}, room=room)
     except Exception as e:
         print(f"Offer error: {e}")
 
@@ -294,50 +291,29 @@ def handle_ice_candidate(data):
     try:
         emit("ice-candidate", {"candidate": data["candidate"]}, room=data["room"], include_self=False)
     except Exception as e:
-        print(f"ICE candidate error: {e}")
+        print(f"ICE error: {e}")
 
 @socketio.on("reject-call")
 def handle_reject_call(data):
     try:
         room = data.get("room")
         emit("call-rejected", {"username": data["username"]}, room=room, include_self=False)
+        emit("message", {"type": "system", "icon": "phone-off", "message": "Call was declined"}, room=room)
         if room in active_calls:
             del active_calls[room]
     except Exception as e:
-        print(f"Reject call error: {e}")
+        print(f"Reject error: {e}")
 
 @socketio.on("call-ended")
 def handle_call_end(data):
     try:
         room = data.get("room")
         emit("call-ended", {"username": data["username"]}, room=room, include_self=False)
+        emit("message", {"type": "system", "icon": "phone-off", "message": "Call ended"}, room=room)
         if room in active_calls:
             del active_calls[room]
     except Exception as e:
         print(f"Call end error: {e}")
 
-# --- Health check ---
-@app.route("/health")
-def health_check():
-    return jsonify({
-        "status": "healthy",
-        "active_rooms": len(room_users),
-        "total_users": sum(len(users) for users in room_users.values()),
-        "active_calls": len(active_calls),
-        "timestamp": time.time()
-    })
-
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Not found"}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"error": "Internal server error"}), 500
-
 if __name__ == "__main__":
-    print("🚀 Enhanced Chat Server Starting...")
-    print("📍 Server: http://0.0.0.0:5000/")
-    print("📊 Health: http://0.0.0.0:5000/health")
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
-
