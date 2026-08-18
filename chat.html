@@ -4,60 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Private Chat</title>
-  <script src="https://unpkg.com/feather-icons"></script>
+  <!-- Font Awesome for clean, reliable UI icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body class="dark-mode">
+<body>
   <div class="chat-container">
+    <!-- Header -->
     <header class="chat-header">
       <div class="title">
-        <i data-feather="flower"></i>
+        <i class="fa-solid fa-seedling"></i>
         <h2>Private Chat</h2>
       </div>
       <button id="theme-toggle" class="icon-btn">
-        <i data-feather="sun" id="theme-icon"></i>
+        <i class="fa-solid fa-sun"></i>
       </button>
     </header>
 
+    <!-- Online Status Section -->
     <section class="online-status">
       <div class="status-indicator">
         <span class="dot green"></span>
         <span>Online: <strong id="online-count">0</strong></span>
       </div>
       <button id="toggle-users-btn" class="text-btn">
-        <i data-feather="chevron-down" id="arrow-icon"></i>
+        <i id="user-list-arrow" class="fa-solid fa-chevron-down"></i>
         <span>Show Online Users</span>
       </button>
       <div id="users-list" class="users-list hidden"></div>
     </section>
 
+    <!-- Chat Messages Container -->
     <section id="chat-messages" class="chat-messages"></section>
 
+    <!-- Footer Controls -->
     <footer class="chat-footer">
       <div class="input-wrapper">
-        <input type="text" placeholder="Message..." id="message-input" />
-        <button id="send-btn" class="send-btn"><i data-feather="send"></i></button>
+        <input type="text" placeholder="Message..." id="message-input" autocomplete="off" />
+        <button id="send-btn" class="send-btn">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
       </div>
       <div class="media-actions">
         <input type="file" id="file-input" style="display: none;" />
-        <button id="upload-btn" class="action-btn"><i data-feather="paperclip"></i> Upload</button>
-        <button id="voice-btn" class="action-btn"><i data-feather="phone"></i> Voice</button>
-        <button id="video-btn" class="action-btn"><i data-feather="video"></i> Video</button>
+        <button id="upload-btn" class="action-btn">
+          <i class="fa-solid fa-paperclip"></i> Upload
+        </button>
+        <button id="voice-btn" class="action-btn">
+          <i class="fa-solid fa-phone"></i> Voice
+        </button>
+        <button id="video-btn" class="action-btn">
+          <i class="fa-solid fa-video"></i> Video
+        </button>
       </div>
     </footer>
   </div>
 
-  <!-- Draggable / Fullscreen Call Overlay -->
+  <!-- Video Call Floating Overlay -->
   <div id="call-popup" class="call-popup">
     <div class="video-preview">
-      <div id="remote-video" class="remote-video"></div>
-      <div id="local-video" class="local-video"></div>
+      <video id="remote-video" autoplay playsinline class="remote-video"></video>
+      <video id="local-video" autoplay playsinline muted class="local-video"></video>
     </div>
     <div class="call-controls">
-      <button class="call-btn"><i data-feather="mic"></i></button>
-      <button class="call-btn"><i data-feather="video-off"></i></button>
-      <button id="fullscreen-btn" class="call-btn"><i data-feather="maximize-2" id="fs-icon"></i></button>
-      <button id="end-call-btn" class="call-btn end-call"><i data-feather="phone-off"></i></button>
+      <button id="mic-btn" class="call-btn"><i class="fa-solid fa-microphone"></i></button>
+      <button id="cam-btn" class="call-btn"><i class="fa-solid fa-video"></i></button>
+      <button id="fullscreen-btn" class="call-btn"><i class="fa-solid fa-expand"></i></button>
+      <button id="end-call-btn" class="call-btn end-call"><i class="fa-solid fa-phone-slash"></i></button>
     </div>
   </div>
 
