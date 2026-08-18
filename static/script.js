@@ -1,82 +1,103 @@
 document.addEventListener("DOMContentLoaded", () => {
-  feather.replace();
-
   const socket = io();
-  const username = prompt("Enter your username:") || "User_" + Math.floor(Math.random() * 1000);
+
+  // Ask for username or generate default
+  let username = prompt("Enter your username:") || "User_" + Math.floor(Math.random() * 1000);
+  username = username.trim();
   const room = "default";
 
-  const popup = document.getElementById('call-popup');
-  const fullscreenBtn = document.getElementById('fullscreen-btn');
-  const themeToggle = document.getElementById('theme-toggle');
-  const chatMessages = document.getElementById('chat-messages');
+  // Elements
+  const chatMessages = document.getElementById("chat-messages");
+  const messageInput = document.getElementById("message-input");
+  const sendBtn = document.getElementById("send-btn");
+  const usersList = document.getElementById("users-list");
+  const onlineCount = document.getElementById("online-count");
+  const toggleUsersBtn = document.getElementById("toggle-users-btn");
+  
+  const popup = document.getElementById("call-popup");
+  const fullscreenBtn = document.getElementById("fullscreen-btn");
+  const videoBtn = document.getElementById("video-btn");
+  const endCallBtn = document.getElementById("end-call-btn");
 
-  let isFullscreen = false;
-  let isDragging = false;
-  let currentX, currentY, initialX, initialY;
-  let xOffset = 0, yOffset = 0;
+  // Join Room
+  socket.emit("join", { username, room });
 
-  // --- Theme Mode Switcher ---
-  themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('light-mode');
-    document.body.classList.toggle('dark-mode');
-    const isLight = document.body.classList.contains('light-mode');
-    document.getElementById('theme-icon').setAttribute('data-feather', isLight ? 'moon' : 'sun');
-    feather.replace();
+  // Toggle Online Users List
+  toggleUsersBtn.addEventListener("click", () => {
+    usersList.classList.toggle("hidden");
+    const arrow = document.getElementById("user-list-arrow");
+    if (usersList.classList.contains("hidden")) {
+      arrow.className = "fa-solid fa-chevron-down";
+    } else {
+      arrow.className = "fa-solid fa-chevron-up";
+    }
   });
 
-  // --- Socket Logic ---
-  socket.emit('join', { username, room });
+  // Render Incoming Messages
+  socket.on("message", (data) => {
+    const msgDiv = document.createElement("div");
 
-  socket.on('message', (data) => {
-    const msgDiv = document.createElement('div');
-    
-    if (data.type === 'system') {
-      msgDiv.className = 'system-message';
-      msgDiv.innerHTML = `<i data-feather="${data.icon || 'info'}"></i> <span>${data.message}</span>`;
+    if (data.username === "System") {
+      msgDiv.className = "system-message";
+      
+      // Select appropriate icon based on system text content
+      let iconClass = "fa-solid fa-circle-info";
+      if (data.message.includes("reconnected")) iconClass = "fa-solid fa-arrows-rotate";
+      else if (data.message.includes("joined")) iconClass = "fa-solid fa-circle-check";
+      else if (data.message.includes("left") || data.message.includes("disconnected")) iconClass = "fa-solid fa-right-from-bracket";
+      
+      msgDiv.innerHTML = `<i class="${iconClass}"></i><span>${data.message}</span>`;
     } else {
       const isSelf = data.username === username;
-      msgDiv.className = `user-message ${isSelf ? 'self' : 'other'}`;
-      msgDiv.innerHTML = `<strong>${isSelf ? 'You' : data.username}</strong><span>${data.message}</span>`;
+      msgDiv.className = `user-message ${isSelf ? "self" : "other"}`;
+      msgDiv.innerHTML = `
+        <span class="username">${isSelf ? "You" : data.username}</span>
+        <span class="text">${data.message}</span>
+      `;
     }
 
     chatMessages.appendChild(msgDiv);
-    feather.replace();
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
-  socket.on('update_user_list', (data) => {
-    document.getElementById('online-count').innerText = data.count;
-    const usersList = document.getElementById('users-list');
-    usersList.innerHTML = '';
-    data.users.forEach(u => {
-      const span = document.createElement('span');
-      span.className = `user-badge ${u === username ? 'active' : ''}`;
-      span.innerText = u;
-      usersList.appendChild(span);
+  // Update Online User Badges
+  socket.on("update_user_list", (data) => {
+    onlineCount.innerText = data.count;
+    usersList.innerHTML = "";
+    data.users.forEach((u) => {
+      const badge = document.createElement("span");
+      badge.className = `user-badge ${u === username ? "active" : ""}`;
+      badge.innerText = u;
+      usersList.appendChild(badge);
     });
   });
 
-  // --- Message Sending ---
-  document.getElementById('send-btn').addEventListener('click', sendMessage);
-  document.getElementById('message-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-  });
-
+  // Message Delivery
   function sendMessage() {
-    const input = document.getElementById('message-input');
-    if (input.value.trim()) {
-      socket.emit('message', { message: input.value });
-      input.value = '';
+    const text = messageInput.value.trim();
+    if (text) {
+      socket.emit("message", { message: text });
+      messageInput.value = "";
     }
   }
 
-  // --- Draggable Call Overlay ---
-  popup.addEventListener('pointerdown', dragStart);
-  document.addEventListener('pointermove', drag);
-  document.addEventListener('pointerup', dragEnd);
+  sendBtn.addEventListener("click", sendMessage);
+  messageInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  // --- Dragging Functionality for Call Pop-up ---
+  let isDragging = false;
+  let isFullscreen = false;
+  let currentX, currentY, initialX, initialY;
+  let xOffset = 0, yOffset = 0;
+
+  popup.addEventListener("pointerdown", dragStart);
+  document.addEventListener("pointermove", drag);
+  document.addEventListener("pointerup", dragEnd);
 
   function dragStart(e) {
-    if (isFullscreen || e.target.closest('button')) return;
+    if (isFullscreen || e.target.closest("button")) return;
     initialX = e.clientX - xOffset;
     initialY = e.clientY - yOffset;
     isDragging = true;
@@ -97,32 +118,33 @@ document.addEventListener("DOMContentLoaded", () => {
     isDragging = false;
   }
 
-  // --- Fixed Fullscreen Toggle ---
-  fullscreenBtn.addEventListener('click', () => {
+  // --- Fullscreen Toggle Logic (Resets Inline Position) ---
+  fullscreenBtn.addEventListener("click", () => {
     isFullscreen = !isFullscreen;
 
     if (isFullscreen) {
-      // Clear inline drag styling overrides
-      popup.style.top = '';
-      popup.style.left = '';
-      popup.style.transform = '';
+      // Clear drag offset values so CSS fullscreen rule applies
+      popup.style.top = "";
+      popup.style.left = "";
+      popup.style.transform = "";
 
-      popup.classList.add('fullscreen-mode');
-      document.getElementById('fs-icon').setAttribute('data-feather', 'minimize-2');
+      popup.classList.add("fullscreen-mode");
+      fullscreenBtn.innerHTML = `<i class="fa-solid fa-compress"></i>`;
     } else {
-      popup.classList.remove('fullscreen-mode');
+      popup.classList.remove("fullscreen-mode");
+      
+      // Re-apply pre-fullscreen drag coordinates
       popup.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0)`;
-      document.getElementById('fs-icon').setAttribute('data-feather', 'maximize-2');
+      fullscreenBtn.innerHTML = `<i class="fa-solid fa-expand"></i>`;
     }
-    feather.replace();
   });
 
-  // Call trigger button
-  document.getElementById('video-btn').addEventListener('click', () => {
-    popup.classList.add('active');
+  // Toggle Video Call Container Display
+  videoBtn.addEventListener("click", () => {
+    popup.classList.add("active");
   });
 
-  document.getElementById('end-call-btn').addEventListener('click', () => {
-    popup.classList.remove('active');
+  endCallBtn.addEventListener("click", () => {
+    popup.classList.remove("active");
   });
 });
