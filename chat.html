@@ -24,16 +24,19 @@
       --muted: rgba(255,255,255,.72);
       --glass-border: rgba(255,255,255,.28);
       --input-bg: rgba(255,255,255,.12);
-      --btn: linear-gradient(135deg, #7b78ff 0%, #9e7aff 100%);
-      --btn-hover: linear-gradient(135deg, #8c89ff 0%, #ad8bff 100%);
+      --btn: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      --btn-hover: linear-gradient(135deg,#7c8ff5 0%,#8d5fc0 100%);
       --radius:26px;
       --shadow:0 20px 50px rgba(0,0,0,.45);
       --veil: linear-gradient(180deg, rgba(6,10,25,.30), rgba(6,10,25,.58));
     }
 
     html, body{
-      height:100%; font-family:'Raleway',sans-serif; color:var(--text);
-      overflow-x:hidden; -webkit-font-smoothing:antialiased;
+      height:100%;
+      font-family:'Raleway',sans-serif;
+      color:var(--text);
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
     }
     body{
       display:flex; flex-direction:column; padding:10px;
@@ -42,22 +45,30 @@
     }
     body::before{
       content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
-      background: radial-gradient(60% 45% at 15% 10%, rgba(122,162,255,.25), transparent 60%),
-                  radial-gradient(55% 45% at 90% 85%, rgba(216,180,254,.24), transparent 60%),
-                  var(--veil);
+      background:
+        radial-gradient(60% 45% at 15% 10%, rgba(122,162,255,.25), transparent 60%),
+        radial-gradient(55% 45% at 90% 85%, rgba(216,180,254,.24), transparent 60%),
+        var(--veil);
     }
-    html.dark-mode, body.dark-mode{ background: var(--night-bg) center/cover no-repeat fixed !important; }
+    html.dark-mode, body.dark-mode{
+      background: var(--night-bg) center/cover no-repeat fixed !important;
+    }
     body.dark-mode::before{
-      background: radial-gradient(60% 45% at 15% 10%, rgba(122,162,255,.22), transparent 60%),
-                  linear-gradient(180deg, rgba(3,6,18,.45), rgba(3,6,18,.72));
+      background:
+        radial-gradient(60% 45% at 15% 10%, rgba(122,162,255,.22), transparent 60%),
+        linear-gradient(180deg, rgba(3,6,18,.45), rgba(3,6,18,.72));
     }
 
     .chat-container{
-      position:relative; z-index:1; width:100%; max-width:620px; margin:auto;
-      padding:1.4rem; display:flex; flex-direction:column;
-      height:calc(100vh - 20px); max-height:920px; border-radius:var(--radius);
+      position:relative; z-index:1;
+      width:100%; max-width:620px; margin:auto;
+      padding:1.4rem;
+      display:flex; flex-direction:column;
+      height:calc(100vh - 20px); max-height:920px;
+      border-radius:var(--radius);
       background:linear-gradient(160deg, rgba(255,255,255,.17), rgba(255,255,255,.06));
-      border:1px solid var(--glass-border); backdrop-filter: blur(26px) saturate(180%);
+      border:1px solid var(--glass-border);
+      backdrop-filter: blur(26px) saturate(180%);
       box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.32);
     }
     body.dark-mode .chat-container{
@@ -66,123 +77,295 @@
     }
 
     .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-shrink:0; }
-    h2{ font-size:1.25rem; font-weight:700; background:linear-gradient(90deg,#ffffff,#a5d8ff 60%,#d8b4fe); -webkit-background-clip:text; color:transparent; }
+    h2{
+      font-size:1.25rem; font-weight:700;
+      background:linear-gradient(90deg,#ffffff,#a5d8ff 60%,#d8b4fe);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
     .theme-toggle{
       background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
-      font-size:1.2rem; cursor:pointer; transition:transform .5s ease; width:44px; height:44px;
-      border-radius:14px; display:flex; align-items:center; justify-content:center;
-      backdrop-filter: blur(10px); color:#fff;
+      font-size:1.2rem; cursor:pointer; transition:transform .5s ease;
+      width:44px; height:44px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      backdrop-filter: blur(10px); box-shadow:none; border:none; color:#fff;
     }
     .theme-toggle:hover{ transform:rotate(180deg); background:rgba(255,255,255,.2); }
 
-    #onlineInfo{ margin-bottom:.9rem; padding:.8rem 1rem; flex-shrink:0; font-size:.88rem; border-radius:16px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); backdrop-filter: blur(10px); }
+    #onlineInfo{
+      margin-bottom:.9rem; padding:.8rem 1rem; flex-shrink:0;
+      font-size:.88rem; border-radius:16px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(10px);
+    }
     details{ margin-top:.5rem; }
     summary{ cursor:pointer; color:var(--muted); font-size:.82rem; user-select:none; }
     #userList{ list-style:none; margin:.5rem 0 0 .25rem; padding:0; display:flex; flex-wrap:wrap; gap:6px; }
-    #userList li{ padding:.25rem .7rem; font-size:.8rem; border-radius:999px; color:rgba(255,255,255,.85); background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); }
+    #userList li{
+      padding:.25rem .7rem; font-size:.8rem; border-radius:999px;
+      color:rgba(255,255,255,.85);
+      background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+    }
     #userList li.current-user{ font-weight:700; color:#0b1020; background:var(--accent); border-color:transparent; }
 
     #messages{
-      flex:1; overflow-y:auto; overflow-x:hidden; word-break:break-word; padding:1rem;
-      margin-bottom:.7rem; border-radius:20px; border:1px solid rgba(255,255,255,.16);
-      background:rgba(10,14,30,.24); backdrop-filter: blur(12px); -webkit-overflow-scrolling:touch;
+      flex:1; overflow-y:auto; padding:1rem; margin-bottom:.7rem;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(10,14,30,.24);
+      backdrop-filter: blur(12px);
+      -webkit-overflow-scrolling:touch;
     }
     #messages::-webkit-scrollbar{ width:6px; }
     #messages::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:999px; }
 
-    .msg{ margin:.55rem 0; padding:.15rem 0; animation:fadeInMsg .3s ease; }
+    .msg{ margin:.55rem 0; padding:.15rem 0; word-wrap:break-word; animation:fadeInMsg .3s ease; }
     @keyframes fadeInMsg{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
     .msg strong{ color:var(--accent); font-weight:600; font-size:.85rem; }
-    
-    .msg-content {
-      background: rgba(255, 255, 255, 0.12);
-      padding: 10px 14px;
-      border-radius: 14px;
-      margin-top: 4px;
-      display: inline-block;
-      max-width: 90%;
+    .msg img{ max-width:100%; border-radius:14px; margin-top:.5rem; cursor:pointer; }
+    .msg audio, .msg video{ width:100%; border-radius:14px; margin-top:.5rem; }
+    .msg a.shared-link{ word-break:break-all; display:block; padding:5px 0; }
+    .shared-link{ color:var(--accent); text-decoration:underline; word-break:break-word; cursor:pointer; }
+
+    .system-msg {
+      text-align: center; font-style: normal; font-size: 0.85rem; color: #a5d8ff; background: rgba(255, 255, 255, 0.08);
+      padding: 8px 12px; border-radius: 12px; margin:.6rem auto; max-width: 85%;
+      border: 1px solid rgba(165, 216, 255, 0.2);
     }
+    .system-msg i { margin-right: 6px; }
 
-    .msg img {
-      max-width: 100%;
-      max-height: 250px;
-      object-fit: contain;
-      border-radius: 12px;
-      margin-top: .4rem;
-      display: block;
-      cursor: pointer;
+    #typing{
+      font-size:.82rem; color:var(--muted); min-height:1.35rem; margin-bottom:.5rem;
+      font-style:italic; flex-shrink:0; display:flex; align-items:center; gap:8px;
+      opacity:0; transform:translateY(4px); transition:opacity .2s ease, transform .2s ease;
     }
-
-    .msg audio {
-      width: 100%;
-      min-width: 240px;
-      max-width: 100%;
-      border-radius: 12px;
-      margin-top: .4rem;
-      display: block;
+    #typing.show{ opacity:1; transform:translateY(0); }
+    .typing-dots{ display:inline-flex; gap:4px; align-items:flex-end; }
+    .typing-dots span{
+      width:6px; height:6px; border-radius:50%; background:var(--accent);
+      display:block; animation:typingBounce 1.2s infinite ease-in-out;
     }
+    .typing-dots span:nth-child(2){ animation-delay:.15s; }
+    .typing-dots span:nth-child(3){ animation-delay:.3s; }
+    @keyframes typingBounce{ 0%,60%,100%{ transform:translateY(0); opacity:.45 } 30%{ transform:translateY(-5px); opacity:1 } }
 
-    .msg video {
-      max-width: 100%;
-      max-height: 250px;
-      border-radius: 12px;
-      margin-top: .4rem;
-      display: block;
+    /* ---------- Composer ---------- */
+    .composer{
+      flex-shrink:0; display:flex; flex-direction:column; gap:10px;
+      padding:10px; border-radius:22px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(14px) saturate(160%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
     }
-
-    .shared-link{ color:var(--accent); text-decoration:underline; word-break:break-all; cursor:pointer; }
-
-    .system-msg { text-align: center; font-style: normal; font-size: 0.85rem; color: #a5d8ff; background: rgba(255, 255, 255, 0.08); padding: 8px 12px; border-radius: 12px; margin:.6rem auto; max-width: 85%; border: 1px solid rgba(165, 216, 255, 0.2); }
-
-    .composer{ flex-shrink:0; display:flex; flex-direction:column; gap:10px; padding:10px; border-radius:22px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); backdrop-filter: blur(14px) saturate(160%); }
     .input-row{ display:flex; gap:8px; align-items:stretch; width:100%; }
     
-    input[type="text"]{ flex:1 1 auto; min-width:0; height:46px; padding:0 1rem; -webkit-appearance:none; appearance:none; border:1px solid rgba(255,255,255,.22); border-radius:16px; font-size:0.9rem; font-family:'Raleway',sans-serif; background:var(--input-bg); color:#fff; outline:none; transition:all .3s ease; backdrop-filter: blur(8px); }
+    input[type="text"]{
+      flex:1 1 auto; min-width:0; height:38px; padding:0 0.8rem;
+      -webkit-appearance:none; appearance:none;
+      border:1px solid rgba(255,255,255,.22); border-radius:14px;
+      font-size:0.9rem; font-family:'Raleway',sans-serif;
+      background:var(--input-bg); color:#fff; outline:none;
+      transition:all .3s ease; backdrop-filter: blur(8px);
+    }
     input[type="text"]:focus{ border-color:var(--accent); background:rgba(255,255,255,.2); box-shadow:0 0 0 4px rgba(165,216,255,.16); }
     input::placeholder{ color:rgba(255,255,255,.55); }
 
-    #sendBtn{ width:46px; height:46px; min-width:46px; flex:0 0 46px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:var(--btn); border:none; cursor:pointer; color:#fff; transition:all .3s ease; }
-    #sendBtn:hover{ background:var(--btn-hover); transform:translateY(-2px); }
+    #sendBtn{
+      width:38px; height:38px; min-width:38px; min-height:38px;
+      max-width:38px; max-height:38px; padding:0;
+      flex:0 0 38px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      -webkit-appearance:none; appearance:none; align-self:center;
+      background:var(--btn); border:none; cursor:pointer; color:#fff;
+      transition:all .3s ease; box-shadow:0 8px 20px rgba(102,126,234,.35), inset 0 1px 0 rgba(255,255,255,.25);
+      font-size:1rem; line-height:1;
+    }
+    #sendBtn:hover{ background:var(--btn-hover); transform:translateY(-2px); box-shadow:0 12px 26px rgba(102,126,234,.45); }
+    #sendBtn:active{ transform:translateY(0); }
+    #sendBtn i{ margin:0; display:block; line-height:1; }
 
-    .action-row{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; align-items:stretch; }
-    .action-row button, .action-row label{ width:100%; display:flex; align-items:center; justify-content:center; min-width:46px; min-height:46px; padding:.7rem; background:var(--btn); border:none; border-radius:16px; cursor:pointer; color:#fff; transition:all .3s ease; }
-    .action-row button:hover, .action-row label:hover{ background:var(--btn-hover); transform:translateY(-2px); }
-    .action-row .btn-label{ font-size:.85rem; font-weight:600; letter-spacing:.2px; }
+    .action-row{
+      display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; align-items:stretch;
+    }
+    .action-row button, .action-row label{ width:100%; display:flex; align-items:center; justify-content:center; }
+    .action-row .btn-label{ font-size:.78rem; font-weight:600; letter-spacing:.2px; }
     .action-row .fas{ margin-right:6px; }
+
+    button, label[for="file"]{
+      min-width:46px; min-height:46px; padding:.7rem;
+      flex-shrink:0; line-height:1;
+      background:var(--btn); border:none; border-radius:16px;
+      cursor:pointer; color:#fff; transition:all .3s ease;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 8px 20px rgba(102,126,234,.35), inset 0 1px 0 rgba(255,255,255,.25);
+    }
+    button:hover, label:hover{ background:var(--btn-hover); transform:translateY(-2px); box-shadow:0 12px 26px rgba(102,126,234,.45); }
+    button:active, label:active{ transform:translateY(0); }
     #file{ display:none; }
 
-    #progressContainer{ padding:1rem; flex-shrink:0; border-radius:18px; border:1px solid rgba(255,255,255,.18); background:rgba(10,14,30,.88); backdrop-filter: blur(14px); display:none; margin-bottom:0.7rem; max-height: 180px; overflow-y: auto; position: relative; }
-    .upload-item { margin-bottom:10px; padding:10px; border-radius:12px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); position:relative; }
+    /* Upload Progress - with Absolute Positioned Action Controls */
+    #progressContainer{
+      padding:1rem; padding-bottom:3.5rem; flex-shrink:0;
+      border-radius:18px; border:1px solid rgba(255,255,255,.18);
+      background:rgba(10,14,30,.88); backdrop-filter: blur(14px);
+      display:none; margin-bottom:0.7rem; max-height: 180px; overflow-y: auto;
+      position: relative;
+    }
+
+    .upload-item {
+      margin-bottom:10px; padding:10px; border-radius:12px; 
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+      position:relative;
+    }
+    .upload-item:last-child { margin-bottom:0; }
+
     .upload-info { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:.85rem; }
     .upload-name { color:var(--muted); font-weight:500; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px; }
     .upload-percent { color:var(--accent); font-weight:600; margin-left:8px; min-width:35px; text-align:right; }
-    .progress-bar-wrapper{ width:100%; height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.12); position:relative; }
-    .progress-bar{ height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,#8ec5fc,#e0c3fc); transition:width .3s ease; }
+
+    .progress-bar-wrapper{
+      width:100%; height:12px; border-radius:999px; overflow:hidden;
+      background:rgba(255,255,255,.12); box-shadow:inset 0 0 8px rgba(0,0,0,.35);
+      position:relative;
+    }
+    .progress-bar{
+      height:100%; width:0%; border-radius:999px;
+      background:linear-gradient(90deg,#8ec5fc,#e0c3fc);
+      background-size:200% 100%;
+      animation:gradientSlide 2s ease infinite;
+      transition:width .3s ease;
+    }
+    @keyframes gradientSlide{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
     .upload-status { font-size:.8rem; margin-top:6px; display:flex; align-items:center; gap:6px; justify-content:space-between; }
-    .status-success { color:#10b981; } .status-error { color:#ff6b6b; } .status-uploading { color:var(--muted); }
-    .upload-cancel-btn { min-width:28px; min-height:28px; background:rgba(255,77,77,.2); border:1px solid rgba(255,77,77,.5); border-radius:6px; cursor:pointer; color:#ff6b6b; display:flex; align-items:center; justify-content:center; }
-    .upload-controls { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
-    #clearCompletedBtn, #cancelAllBtn { min-height:30px; padding:.3rem .8rem; font-size:.75rem; border-radius:10px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.2); color:#fff; cursor:pointer; }
+    .upload-status-text { flex:1; }
+    .status-success { color:#10b981; }
+    .status-error { color:#ff6b6b; }
+    .status-uploading { color:var(--muted); }
 
-    #videoArea{ display:none; position:fixed; z-index:9998; overflow:hidden; border-radius:22px; border:1px solid var(--glass-border); background:linear-gradient(160deg, rgba(12,16,34,.86), rgba(6,10,25,.92)); backdrop-filter: blur(20px) saturate(170%); box-shadow:var(--shadow); flex-direction:column; }
+    .upload-cancel-btn {
+      min-width:28px; min-height:28px; width:28px; height:28px; padding:0;
+      background:rgba(255,77,77,.2);
+      border:1px solid rgba(255,77,77,.5);
+      border-radius:6px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#ff6b6b;
+      font-size:0.8rem;
+      transition:all .2s ease;
+      flex-shrink:0;
+    }
+    .upload-cancel-btn:hover {
+      background:rgba(255,77,77,.4);
+      border-color:rgba(255,77,77,.8);
+    }
+
+    .upload-controls { 
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      display: flex; 
+      gap: 8px; 
+      justify-content: flex-end;
+      background: rgba(10,14,30,0.95);
+      padding: 4px 8px;
+      border-radius: 10px;
+      z-index: 5;
+    }
+    #clearCompletedBtn, #cancelAllBtn { min-height:30px; padding:.3rem .8rem; font-size:.75rem; position: absolute; bottom: 8px; right: 12px; }
+    #cancelAllBtn { right: 145px; } /* Positioning controls dynamically when both show */
+
+    /* ---------- Call surface ---------- */
+    #videoArea{
+      display:none; position:fixed; z-index:9998; overflow:hidden;
+      border-radius:22px; border:1px solid var(--glass-border);
+      background:linear-gradient(160deg, rgba(12,16,34,.86), rgba(6,10,25,.92));
+      backdrop-filter: blur(20px) saturate(170%);
+      box-shadow:var(--shadow);
+      flex-direction:column;
+    }
     #videoArea.active{ display:flex; }
-    #videoArea.pip{ width:min(44vw, 220px); aspect-ratio:3/4; max-height:40vh; right:14px; top:14px; }
-    #videoArea.full{ inset:0; width:100%; height:100%; border-radius:0; border:none; }
+    #videoArea.pip{
+      width:min(44vw, 220px); aspect-ratio:3/4; max-height:40vh;
+      right:14px; top:calc(14px + env(safe-area-inset-top));
+      left:auto; bottom:auto; cursor:move;
+    }
+    #videoArea.full{
+      inset:0; width:100%; height:100%; max-height:none;
+      border-radius:0; border:none; aspect-ratio:auto;
+    }
     .video-stage{ position:relative; flex:1; min-height:0; }
-    #remoteVideo{ width:100%; height:100%; object-fit:cover; background:#05070f; }
-    #localVideo{ position:absolute; right:8px; top:8px; width:28%; max-width:120px; aspect-ratio:3/4; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,.35); background:#05070f; }
-    #callStatus{ display:none; padding:.9rem 1rem .2rem; text-align:center; font-size:.9rem; font-weight:600; color:var(--accent); }
-    #videoArea.audio-only #callStatus{ display:block; }
+    #remoteVideo{
+      width:100%; height:100%; object-fit:cover;
+      background:radial-gradient(circle at 50% 35%, #17203f, #05070f);
+    }
+    #localVideo{
+      position:absolute; right:8px; top:8px;
+      width:28%; max-width:120px; aspect-ratio:3/4; object-fit:cover;
+      border-radius:12px; border:1px solid rgba(255,255,255,.35);
+      box-shadow:0 8px 20px rgba(0,0,0,.5); background:#05070f; cursor:grab;
+    }
+    #localVideo.dragging { cursor:grabbing; }
+    #videoArea.full #localVideo{ width:22%; max-width:180px; right:14px; top:14px; }
     #videoArea.audio-only .video-stage{ display:none; }
-    #callControls{ display:flex; justify-content:center; gap:8px; padding:10px; }
-    #callControls button{ min-width:42px; min-height:42px; border-radius:14px; border:none; background:rgba(255,255,255,.15); color:#fff; cursor:pointer; }
-    .btn-danger { background: linear-gradient(135deg, #ff4d4d, #ff6b6b) !important; }
+    #videoArea.audio-only.pip{ aspect-ratio:auto; height:auto; }
+    
+    #callStatus{
+      display:none; padding:.9rem 1rem .2rem; text-align:center;
+      font-size:.9rem; font-weight:600; color:var(--accent);
+    }
+    #videoArea.audio-only #callStatus{ display:block; }
+    
+    #callControls{
+      display:flex; flex-wrap:wrap; justify-content:center; gap:8px;
+      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.35));
+    }
+    #callControls button{ min-width:42px; min-height:42px; border-radius:14px; }
+    #videoArea.pip #callControls{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px; }
+    #videoArea.pip #callControls button{ min-width:0; width:100%; min-height:34px; padding:.35rem; font-size:.75rem; border-radius:11px; }
 
-    #incomingCall{ display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:9999; padding:1.3rem; border-radius:20px; background:rgba(12,16,34,.95); border:1px solid var(--glass-border); backdrop-filter: blur(24px); }
-    #callerInfo{ margin-bottom:1rem; font-weight:600; color:var(--accent); text-align:center; }
+    .btn-danger { background: linear-gradient(135deg, #ff4d4d, #ff6b6b) !important; box-shadow: 0 8px 20px rgba(255,77,77,.3) !important; }
+
+    #incomingCall{
+      display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%);
+      z-index:9999; padding:1.3rem 1.4rem; border-radius:20px;
+      background:linear-gradient(160deg, rgba(255,255,255,.18), rgba(255,255,255,.07));
+      border:1px solid var(--glass-border);
+      backdrop-filter: blur(24px) saturate(180%);
+      box-shadow:var(--shadow);
+      animation:slideDown .4s ease;
+    }
+    @keyframes slideDown{ from{transform:translateX(-50%) translateY(-120%)} to{transform:translateX(-50%) translateY(0)} }
+    #callerInfo{ margin-bottom:1rem; font-weight:600; color:var(--accent); display:flex; align-items:center; justify-content:center; gap:8px; }
+    .call-pulse { animation: callPulse 1s infinite; }
+    @keyframes callPulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+    
     .incoming-call-buttons { display: flex; justify-content:center; gap: 15px; }
-    .call-btn { width:50px; height:50px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; border:none; color:#fff; cursor:pointer; }
+    .call-btn { min-width:50px; min-height:50px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
     .call-accept { background: #10b981; }
+    .call-accept:hover { background: #0f9970; }
+
+    @supports (-webkit-touch-callout: none){ input[type="text"]{ font-size:16px; } }
+
+    @media (max-width:500px){
+      h2{ font-size:1.05rem; }
+      .chat-container{ padding:1rem; height:calc(100vh - 10px); border-radius:22px; }
+      #messages{ padding:.8rem; }
+      button, label[for="file"]{ min-width:42px; min-height:42px; padding:.6rem; }
+      .action-row .btn-label{ font-size:.72rem; }
+      #sendBtn { width:36px; height:36px; min-width:36px; max-width:36px; }
+      input[type="text"] { height:36px; font-size:0.85rem; }
+      #videoArea.pip { width:180px; }
+    }
+    @media (max-width:340px){
+      .action-row .btn-label{ display:none; }
+      .action-row .fas{ margin-right:0; }
+      #sendBtn { width:34px; height:34px; min-width:34px; max-width:34px; }
+      input[type="text"] { height:34px; font-size:0.8rem; }
+    }
   </style>
 </head>
 <body>
@@ -205,23 +388,33 @@
     <div id="progressContainer">
       <div id="uploadsList"></div>
       <div class="upload-controls">
-        <button id="cancelAllBtn" onclick="cancelAllUploads()" style="display:none;"><i class="fas fa-times"></i> Cancel All</button>
-        <button id="clearCompletedBtn" onclick="clearCompletedUploads()" style="display:none;"><i class="fas fa-check"></i> Clear Completed</button>
+        <button id="cancelAllBtn" onclick="cancelAllUploads()" style="display:none;">
+          <i class="fas fa-times"></i> Cancel All
+        </button>
+        <button id="clearCompletedBtn" onclick="clearCompletedUploads()" style="display:none;">
+          <i class="fas fa-check"></i> Clear Completed
+        </button>
       </div>
+    </div>
+    
+    <div id="typing" aria-live="polite">
+      <span class="typing-dots"><span></span><span></span><span></span></span>
+      <span id="typingText"></span>
     </div>
 
     <div class="composer">
       <div class="input-row">
-        <input type="text" id="messageInput" placeholder="Message..." autocomplete="off" />
-        <button id="sendBtn" type="button" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        <input type="text" id="messageInput" placeholder="Message..." autocomplete="off" oninput="notifyTyping()" />
+        <button id="sendBtn" type="button" onclick="sendMessage()" title="Send Message" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
       </div>
       <div class="action-row">
         <label for="file" title="Attach Files"><i class="fas fa-paperclip"></i><span class="btn-label">Upload</span></label>
-        <button id="voiceCallBtn" onclick="startCall(false)"><i class="fas fa-phone"></i><span class="btn-label">Voice</span></button>
-        <button id="videoCallBtn" onclick="startCall(true)"><i class="fas fa-video"></i><span class="btn-label">Video</span></button>
+        <button id="voiceCallBtn" onclick="startCall(false)" title="Voice Call"><i class="fas fa-phone"></i><span class="btn-label">Voice</span></button>
+        <button id="videoCallBtn" onclick="startCall(true)" title="Video Call"><i class="fas fa-video"></i><span class="btn-label">Video</span></button>
       </div>
       <input type="file" id="file" multiple />
     </div>
+
   </div>
 
   <div id="videoArea" class="pip">
@@ -231,364 +424,713 @@
       <video id="localVideo" muted autoplay playsinline></video>
     </div>
     <div id="callControls">
-      <button onclick="toggleMute()"><i id="micIcon" class="fas fa-microphone"></i></button>
-      <button onclick="toggleCamera()"><i id="camIcon" class="fas fa-video"></i></button>
-      <button onclick="toggleCallView()"><i id="viewIcon" class="fas fa-expand"></i></button>
-      <button onclick="endCall()" class="btn-danger"><i class="fas fa-phone-slash"></i></button>
+      <button onclick="toggleMute()" title="Mute/Unmute"><i id="micIcon" class="fas fa-microphone"></i></button>
+      <button onclick="toggleCamera()" title="Toggle Camera"><i id="camIcon" class="fas fa-video"></i></button>
+      <button onclick="toggleCallView()" title="Fullscreen / Pop-up"><i id="viewIcon" class="fas fa-expand"></i></button>
+      <button onclick="endCall()" title="End Call" class="btn-danger"><i class="fas fa-phone-slash"></i></button>
     </div>
   </div>
 
   <div id="incomingCall">
-    <p id="callerInfo"><span id="callerName">Incoming Call</span></p>
+    <p id="callerInfo"><i class="fas fa-phone-volume call-pulse"></i> <span id="callerName">Incoming Call</span></p>
     <div class="incoming-call-buttons">
-      <button class="call-btn call-accept" onclick="acceptCall()"><i id="acceptIcon" class="fas fa-phone"></i></button>
-      <button class="call-btn btn-danger" onclick="rejectCall()"><i class="fas fa-phone-slash"></i></button>
+      <button class="call-btn call-accept" onclick="acceptCall()" title="Accept Call">
+        <i id="acceptIcon" class="fas fa-phone"></i>
+      </button>
+      <button class="call-btn btn-danger" onclick="rejectCall()" title="Reject Call">
+        <i class="fas fa-phone-slash"></i>
+      </button>
     </div>
   </div>
 
   <script>
-    const socket = io({ reconnection: true, transports: ['websocket', 'polling'] });
+    const socket = io({
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+      transports: ['websocket', 'polling']
+    });
 
     const username = localStorage.getItem("chat_username") || "Guest";
     const room = localStorage.getItem("chat_room") || "default";
     const messages = document.getElementById("messages");
+    const typingStatus = document.getElementById("typing");
     
     let currentUploads = new Map();
     let uploadCounter = 0;
     const MAX_FILE_SIZE = 50 * 1024 * 1024;
     let isCaller = false; 
+    let callConnectedLogged = false; 
 
-    if (!username || !room || username === "Guest") window.location.href = "/";
+    if (!username || !room || username === "Guest") {
+      window.location.href = "/";
+    }
+
     socket.emit("join", { username, room });
 
-    function getFileNameFromUrl(url) { try { return url.split('/').pop().split('?')[0]; } catch (e) { return "File"; } }
-    function getFileExtension(filename) { const match = filename.match(/\.([a-z0-9]+)(\?.*)?$/i); return match ? match[1].toLowerCase() : ''; }
+    // Helper to append a localized system message straight to the chat window (prevents server duplication)
+    function addLocalSystemMessage(htmlContent) {
+      const div = document.createElement("div");
+      div.className = "system-msg";
+      div.innerHTML = htmlContent;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
 
-    // FILE UPLOAD HANDLER
+    // ========== FILE HANDLING ==========
+    function getFileNameFromUrl(url) {
+      try { return url.split('/').pop().split('?')[0]; } 
+      catch (e) { return "File"; }
+    }
+
+    function getFileExtension(filename) {
+      const match = filename.match(/\.([a-z0-9]+)(\?.*)?$/i);
+      return match ? match[1].toLowerCase() : '';
+    }
+
+    // ========== FILE UPLOAD HANDLER ==========
     document.getElementById("file").addEventListener("change", function() {
       const files = Array.from(this.files);
       if (!files.length) return;
-      document.getElementById("progressContainer").style.display = "block";
+
+      const container = document.getElementById("progressContainer");
+      container.style.display = "block";
 
       files.forEach(file => {
         const uploadId = ++uploadCounter;
         if (file.size > MAX_FILE_SIZE) {
-          addUploadItem(uploadId, file.name, "error", `Max size 50MB`);
-          setTimeout(() => removeUploadItem(uploadId), 3000); 
+          addUploadItem(uploadId, file.name, "error", `File too large! Max 50MB`);
+          setTimeout(() => removeUploadItem(uploadId), 3000);
           return;
         }
-        addUploadItem(uploadId, file.name, "uploading"); 
+
+        addUploadItem(uploadId, file.name, "uploading");
         uploadFile(file, uploadId);
       });
+
       this.value = "";
     });
 
     function addUploadItem(id, name, status, errorMsg = "") {
       const container = document.getElementById("uploadsList");
       let item = document.getElementById(`upload-${id}`);
-      if (!item) { item = document.createElement("div"); item.id = `upload-${id}`; item.className = "upload-item"; container.appendChild(item); }
+      
+      if (!item) {
+        item = document.createElement("div");
+        item.id = `upload-${id}`;
+        item.className = "upload-item";
+        container.appendChild(item);
+      }
 
+      // 🔧 FIX: keep the real percentage (100% once finished) instead of resetting to 0%
       const prev = currentUploads.get(id) || {};
       let shownPercent = typeof prev.percent === "number" ? prev.percent : 0;
       if (status === "success") shownPercent = 100;
 
-      let html = `<div class="upload-info"><span class="upload-name">${name}</span><span class="upload-percent" id="percent-${id}">${shownPercent}%</span></div>`;
+      let html = `<div class="upload-info">
+        <span class="upload-name" title="${name}">${name}</span>
+        <span class="upload-percent" id="percent-${id}">${shownPercent}%</span>
+      </div>`;
+
       if (status === "uploading") {
-        html += `<div class="progress-bar-wrapper"><div class="progress-bar" id="bar-${id}" style="width:${shownPercent}%"></div></div>
-                 <div class="upload-status status-uploading"><span>Uploading...</span>
-                 <button class="upload-cancel-btn" onclick="cancelSingleUpload(${id})"><i class="fas fa-times"></i></button></div>`;
+        html += `<div class="progress-bar-wrapper">
+          <div class="progress-bar" id="bar-${id}" style="width:${shownPercent}%"></div>
+        </div>`;
+        html += `<div class="upload-status status-uploading" id="status-${id}">
+          <span class="upload-status-text"><i class="fas fa-spinner fa-spin"></i> Uploading...</span>
+          <button class="upload-cancel-btn" onclick="cancelSingleUpload(${id})" title="Cancel upload">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>`;
       } else if (status === "success") {
-        html += `<div class="progress-bar-wrapper"><div class="progress-bar" id="bar-${id}" style="width:100%"></div></div>
-                 <div class="upload-status status-success"><span>Uploaded successfully</span></div>`;
+        html += `<div class="progress-bar-wrapper">
+          <div class="progress-bar" id="bar-${id}" style="width:100%"></div>
+        </div>`;
+        html += `<div class="upload-status status-success" id="status-${id}">
+          <span class="upload-status-text"><i class="fas fa-check-circle"></i> Uploaded successfully</span>
+        </div>`;
       } else {
-        html += `<div class="upload-status status-error"><span>${errorMsg}</span></div>`;
+        html += `<div class="upload-status status-error" id="status-${id}">
+          <span class="upload-status-text"><i class="fas fa-exclamation-circle"></i> ${errorMsg}</span>
+        </div>`;
       }
+
       item.innerHTML = html;
       currentUploads.set(id, { ...prev, xhr: status === "uploading" ? prev.xhr : undefined, status, percent: shownPercent, name });
       updateControlButtons();
     }
 
     function updateUploadProgress(id, percent) {
-      const bar = document.getElementById(`bar-${id}`); 
+      const bar = document.getElementById(`bar-${id}`);
       const percent_el = document.getElementById(`percent-${id}`);
-      if (bar) bar.style.width = percent + "%"; 
+      if (bar) bar.style.width = percent + "%";
       if (percent_el) percent_el.textContent = percent + "%";
-      const entry = currentUploads.get(id); 
+      const entry = currentUploads.get(id);
       if (entry) currentUploads.set(id, { ...entry, percent });
     }
 
     function removeUploadItem(id) {
       const item = document.getElementById(`upload-${id}`);
       if (item) {
-        item.style.opacity = '0';
-        setTimeout(() => { 
-          item.remove(); 
-          if (currentUploads.size === 0) { 
-            document.getElementById("progressContainer").style.display = "none"; 
-            document.getElementById("uploadsList").innerHTML = ""; 
-          } 
+        item.style.animation = "fadeOutUpload 0.3s ease forwards";
+        setTimeout(() => {
+          item.remove();
+          if (currentUploads.size === 0) {
+            document.getElementById("progressContainer").style.display = "none";
+            document.getElementById("uploadsList").innerHTML = "";
+          }
         }, 300);
       }
-      currentUploads.delete(id); 
+      currentUploads.delete(id);
       updateControlButtons();
     }
 
     function uploadFile(file, uploadId) {
       const formData = new FormData();
-      formData.append("file", file); 
-      formData.append("username", username); 
+      formData.append("file", file);
+      // 🔧 FIX: let the server broadcast the file to the whole room, so every user sees it
+      formData.append("username", username);
       formData.append("room", room);
 
       const xhr = new XMLHttpRequest();
       currentUploads.set(uploadId, { xhr, status: "uploading", percent: 0, name: file.name });
 
-      xhr.upload.onprogress = (e) => { 
-        if (e.lengthComputable) updateUploadProgress(uploadId, Math.round((e.loaded / e.total) * 100)); 
-      };
-
-      xhr.onload = () => {
-        let data = null; 
-        try { data = JSON.parse(xhr.responseText); } catch (e) {}
-
-        if (xhr.status === 200 && data && data.url) {
-          updateUploadProgress(uploadId, 100); 
-          addUploadItem(uploadId, file.name, "success");
-        } else { 
-          addUploadItem(uploadId, file.name, "error", (data && data.error) ? data.error : "Upload failed"); 
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          updateUploadProgress(uploadId, percent);
         }
       };
 
-      xhr.onerror = () => addUploadItem(uploadId, file.name, "error", "Network error");
-      xhr.open("POST", "/upload", true); 
+      xhr.onload = () => {
+        let data = null;
+        try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }
+
+        if (xhr.status === 200 && data && data.url) {
+          updateUploadProgress(uploadId, 100);
+          addUploadItem(uploadId, file.name, "success");
+          // The server already broadcast the file message to the room (including us).
+          // Fallback for older servers that don't broadcast:
+          if (data.broadcast === false) {
+            socket.emit("message", { username, room, message: data.url });
+          }
+        } else {
+          addUploadItem(uploadId, file.name, "error", (data && data.error) ? data.error : "Upload failed");
+        }
+        updateControlButtons();
+      };
+
+      xhr.onerror = () => {
+        addUploadItem(uploadId, file.name, "error", "Network error");
+        updateControlButtons();
+      };
+
+      xhr.open("POST", "/upload", true);
       xhr.send(formData);
+      updateControlButtons();
     }
 
-    function cancelSingleUpload(id) { 
-      const u = currentUploads.get(id); 
-      if (u && u.xhr && u.status === "uploading") u.xhr.abort(); 
-      addUploadItem(id, u.name||"File", "error", "Cancelled"); 
-      setTimeout(() => removeUploadItem(id), 1500); 
+    function cancelSingleUpload(id) {
+      const upload = currentUploads.get(id);
+      if (upload && upload.xhr && upload.status === "uploading") {
+        upload.xhr.abort();
+      }
+      addUploadItem(id, (upload && upload.name) || "File", "error", "Cancelled");
+      updateControlButtons();
+      setTimeout(() => removeUploadItem(id), 1500);
     }
-    
-    function cancelAllUploads() { 
-      currentUploads.forEach((u, id) => { 
-        if (u.xhr && u.status === "uploading") u.xhr.abort(); 
-        addUploadItem(id, u.name||"File", "error", "Cancelled"); 
-      }); 
-      setTimeout(() => currentUploads.forEach((_, id) => removeUploadItem(id)), 1500); 
+
+    function cancelAllUploads() {
+      currentUploads.forEach((upload, id) => {
+        if (upload.xhr && upload.status === "uploading") {
+          upload.xhr.abort();
+        }
+        addUploadItem(id, upload.name || "File", "error", "Cancelled");
+      });
+      updateControlButtons();
+      setTimeout(() => {
+        currentUploads.forEach((_, id) => removeUploadItem(id));
+      }, 1500);
     }
-    
-    function clearCompletedUploads() { 
-      currentUploads.forEach((u, id) => { 
-        if (u.status === "success" || u.status === "error") removeUploadItem(id); 
-      }); 
+
+    function clearCompletedUploads() {
+      const toRemove = [];
+      currentUploads.forEach((upload, id) => {
+        if (upload.status === "success" || upload.status === "error") {
+          toRemove.push(id);
+        }
+      });
+      toRemove.forEach(removeUploadItem);
+      updateControlButtons();
     }
 
     function updateControlButtons() {
-      document.getElementById("cancelAllBtn").style.display = Array.from(currentUploads.values()).some(u => u.status === "uploading") ? "inline-block" : "none";
-      document.getElementById("clearCompletedBtn").style.display = Array.from(currentUploads.values()).some(u => u.status === "success" || u.status === "error") ? "inline-block" : "none";
+      const hasInProgress = Array.from(currentUploads.values()).some(u => u.status === "uploading");
+      const hasCompleted = Array.from(currentUploads.values()).some(u => u.status === "success" || u.status === "error");
+      
+      document.getElementById("cancelAllBtn").style.display = hasInProgress ? "flex" : "none";
+      document.getElementById("clearCompletedBtn").style.display = hasCompleted ? "flex" : "none";
     }
 
+    // ========== USER LIST ==========
     socket.on("update_user_list", (data) => {
-      const userList = document.getElementById("userList"); 
+      const userList = document.getElementById("userList");
       userList.innerHTML = "";
       data.users.forEach(user => {
-        const li = document.createElement("li"); 
+        const li = document.createElement("li");
         li.textContent = user;
-        if (user === username) li.classList.add("current-user"); 
+        if (user === username) li.classList.add("current-user");
         userList.appendChild(li);
       });
       document.getElementById("onlineCount").textContent = data.count;
     });
 
+    // ========== MESSAGES ==========
     socket.on("message", data => {
-      const div = document.createElement("div"); 
-      const msg = data.message; 
+      const div = document.createElement("div");
+      const msg = data.message;
       let formattedMessage = "";
 
-      const isUploadedFile = typeof msg === "string" && (msg.startsWith("/") || msg.startsWith("http")) && msg.includes("/uploads/");
-      const extension = getFileExtension(msg); 
+      const isUploadedFile = typeof msg === "string" && msg.startsWith("/") && msg.includes("/uploads/");
+      const extension = getFileExtension(msg);
       const fileName = getFileNameFromUrl(msg);
 
       if (isUploadedFile) {
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) { 
-          formattedMessage = `<img src="${msg}" onclick="window.open('${msg}','_blank')">`; 
-        } 
-        else if (['mp4', 'webm', 'mov'].includes(extension)) { 
-          formattedMessage = `<video controls playsinline><source src="${msg}"></video>`; 
-        } 
-        else if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(extension)) { 
-          formattedMessage = `<audio controls preload="metadata"><source src="${msg}"></audio><div style="font-size:.75rem;margin-top:4px;">🎵 <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a></div>`; 
-        } 
-        else { 
-          formattedMessage = `📁 File: <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a>`; 
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension)) {
+          formattedMessage = `<img src="${msg}" alt="${fileName}" style="cursor:pointer;" onclick="window.open('${msg}','_blank')">`;
+        } else if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v', '3gp'].includes(extension)) {
+          formattedMessage = `<video controls playsinline style="border-radius:14px;"><source src="${msg}"></video>`;
+        } else if (['mp3', 'wav', 'ogg', 'oga', 'aac', 'm4a', 'opus', 'flac', 'amr', 'weba', 'mka'].includes(extension)) {
+          formattedMessage = `<audio controls preload="metadata" style="width:100%;"><source src="${msg}"></audio>
+            <div style="font-size:.75rem;opacity:.8;margin-top:4px;">🎵 <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a></div>`;
+        } else {
+          formattedMessage = `📁 Shared File: <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a>`;
         }
-      } else if (typeof msg === "string" && msg.startsWith("http")) { 
-        formattedMessage = `<a href="${msg}" target="_blank" class="shared-link">${msg}</a>`; 
-      } else { 
-        formattedMessage = msg.replace(/(https?:\/\/[^\s]+)/g, (url) => `<a href="${url}" target="_blank" class="shared-link">${url}</a>`); 
+      } else if (typeof msg === "string" && msg.startsWith("http")) {
+        formattedMessage = `<a href="${msg}" target="_blank" class="shared-link">${msg}</a>`;
+      } else {
+        formattedMessage = msg.replace(
+          /(https?:\/\/[^\s]+)/g,
+          (url) => `<a href="${url}" target="_blank" class="shared-link">${url}</a>`
+        );
       }
 
-      if (data.username === "System") { 
-        div.className = "system-msg"; 
-        div.innerHTML = formattedMessage; 
-      } else { 
-        div.className = "msg"; 
-        div.innerHTML = `<strong>${data.username}</strong>:<div class="msg-content">${formattedMessage}</div>`; 
+      if (data.username === "System") {
+        div.className = "system-msg";
+        div.innerHTML = `${formattedMessage}`;
+      } else {
+        div.className = "msg";
+        div.innerHTML = `<strong>${data.username}</strong>:<div style="background: rgba(255, 255, 255, 0.08); padding: 10px; border-radius: 12px; margin-top: 4px; display: inline-block; max-width: 90%;">${formattedMessage}</div>`;
       }
-
-      messages.appendChild(div); 
+      messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
     });
 
+    // ========== TYPING INDICATOR ==========
+    const typingText = document.getElementById("typingText");
+    const typers = new Map();
+    let iAmTyping = false;
+    let stopTypingTimer;
+
+    function renderTyping() {
+      const names = [...typers.keys()];
+      if (!names.length) { 
+        typingStatus.classList.remove("show"); 
+        typingText.textContent = ""; 
+        return; 
+      }
+      
+      let label;
+      if (names.length === 1) label = `${names[0]} is typing`;
+      else if (names.length === 2) label = `${names[0]} and ${names[1]} are typing`;
+      else label = `${names.length} people are typing`;
+      typingText.textContent = label;
+      typingStatus.classList.add("show");
+    }
+
+    function setTyping(user, isTyping) {
+      if (!user || user === username) return;
+      if (typers.has(user)) clearTimeout(typers.get(user));
+      
+      if (isTyping) { 
+        typers.set(user, setTimeout(() => { typers.delete(user); renderTyping(); }, 4000)); 
+      } else { 
+        typers.delete(user); 
+      }
+      renderTyping();
+    }
+
+    socket.on("typing", (data) => {
+      setTyping(data.username, data.isTyping !== false);
+    });
+    socket.on("stop_typing", (data) => setTyping(data.username, false));
+    
+    function emitTyping(isT) { socket.emit("typing", { username, room, isTyping: isT }); }
+    function notifyTyping() {
+      if (!document.getElementById("messageInput").value.trim()) { stopTyping(); return; }
+      if (!iAmTyping) { iAmTyping = true; emitTyping(true); }
+      clearTimeout(stopTypingTimer); 
+      stopTypingTimer = setTimeout(stopTyping, 1800);
+    }
+    function stopTyping() { 
+      clearTimeout(stopTypingTimer); 
+      if (iAmTyping) { iAmTyping = false; emitTyping(false); } 
+    }
+
+    window.addEventListener("blur", stopTyping);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) stopTyping(); });
+    
     function sendMessage() {
-      const msg = document.getElementById("messageInput").value.trim(); 
+      const msg = document.getElementById("messageInput").value.trim();
       if (!msg) return;
       socket.emit("message", { username, room, message: msg });
       document.getElementById("messageInput").value = "";
+      stopTyping();
     }
+    document.getElementById("messageInput").addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
-    document.getElementById("messageInput").addEventListener("keypress", (e) => { 
-      if (e.key === "Enter") sendMessage(); 
-    });
-
+    // ========== THEME TOGGLE ==========
     function toggleTheme() {
-      document.body.classList.toggle("dark-mode");
-      document.getElementById("theme-icon").textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+      document.body.classList.toggle("dark-mode"); 
+      document.documentElement.classList.toggle("dark-mode");
+      const icon = document.getElementById("theme-icon");
+      icon.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+      localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+    }
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark-mode"); 
+      document.documentElement.classList.add("dark-mode");
+      document.getElementById("theme-icon").textContent = "☀️";
     }
 
-    // WEBRTC CALL SYSTEM
-    let localStream = null; 
-    let peerConnection = null; 
-    let isVideoCall = false; 
+    // ========== WebRTC LOGIC ==========
+    let localStream = null;
+    let peerConnection = null;
+    const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+    let isVideoCall = false;
     let isMuted = false;
-    let pendingCandidates = [];
+    let isCallStarting = false;
+    let isCamOn = true;
+    let pipOffset = { x: 0, y: 0 };
+    let isDraggingPIP = false;
 
     function setCallUI(active, video) {
-      const area = document.getElementById("videoArea"); 
-      area.classList.toggle("active", active); 
+      const area = document.getElementById("videoArea");
+      area.classList.toggle("active", active);
       area.classList.toggle("audio-only", active && !video);
-      document.getElementById("camIcon").parentElement.style.display = video ? "inline-block" : "none";
-      if (!active) { area.classList.remove("full"); area.classList.add("pip"); }
-      const statusEl = document.getElementById("callStatus"); 
-      if (statusEl && active) statusEl.innerHTML = video ? "🎥 Video call…" : "🔊 Voice call…";
+      document.getElementById("camIcon").parentElement.style.display = video ? "flex" : "none";
+      if (!active) {
+        area.classList.remove("full");
+        area.classList.add("pip");
+        document.getElementById("viewIcon").className = "fas fa-expand";
+      }
+      const statusEl = document.getElementById("callStatus");
+      if (statusEl && active) {
+        statusEl.innerHTML = video ? "🎥 Video call in progress…" : "🔊 Voice call in progress…";
+      }
+      updateCallButtons();
     }
 
-    function toggleCallView() { 
-      const area = document.getElementById("videoArea"); 
-      area.classList.toggle("full"); 
-      area.classList.toggle("pip"); 
+    // 🔧 FIX: one call at a time — the mode (voice/video) is locked until the call ends
+    function isCallBusy() {
+      return document.getElementById("videoArea").classList.contains("active")
+        || !!peerConnection
+        || !!window.pendingOffer
+        || isCallStarting;
     }
+
+    function updateCallButtons() {
+      const busy = isCallBusy();
+      ["voiceCallBtn", "videoCallBtn"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = busy;
+        btn.style.opacity = busy ? "0.45" : "";
+        btn.style.pointerEvents = busy ? "none" : "";
+        btn.title = busy
+          ? "End the current call before switching call mode"
+          : (id === "voiceCallBtn" ? "Voice Call" : "Video Call");
+      });
+    }
+
+    function toggleCallView() {
+      const area = document.getElementById("videoArea");
+      const goFull = !area.classList.contains("full");
+      area.classList.toggle("full", goFull);
+      area.classList.toggle("pip", !goFull);
+      
+      // 🔧 FIX: Clear inline positioning styles when entering fullscreen
+      if (goFull) {
+        area.style.left = "";
+        area.style.top = "";
+        area.style.right = "";
+        area.style.bottom = "";
+      }
+      
+      document.getElementById("viewIcon").className = goFull ? "fas fa-compress" : "fas fa-expand";
+    }
+
+    // ========== PIP DRAGGING ==========
+    const videoArea = document.getElementById("videoArea");
+
+    videoArea.addEventListener("mousedown", (e) => {
+      if (videoArea.classList.contains("pip")) {
+        isDraggingPIP = true;
+        pipOffset.x = e.clientX - videoArea.offsetLeft;
+        pipOffset.y = e.clientY - videoArea.offsetTop;
+        videoArea.style.cursor = "grabbing";
+      }
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (isDraggingPIP) {
+        videoArea.style.left = (e.clientX - pipOffset.x) + "px";
+        videoArea.style.top = (e.clientY - pipOffset.y) + "px";
+        videoArea.style.right = "auto";
+        videoArea.style.bottom = "auto";
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDraggingPIP = false;
+      videoArea.style.cursor = "move";
+    });
+
+    videoArea.addEventListener("touchstart", (e) => {
+      if (videoArea.classList.contains("pip") && e.touches.length === 1) {
+        isDraggingPIP = true;
+        const touch = e.touches[0];
+        pipOffset.x = touch.clientX - videoArea.offsetLeft;
+        pipOffset.y = touch.clientY - videoArea.offsetTop;
+      }
+    });
+
+    document.addEventListener("touchmove", (e) => {
+      if (isDraggingPIP && e.touches.length === 1) {
+        const touch = e.touches[0];
+        videoArea.style.left = (touch.clientX - pipOffset.x) + "px";
+        videoArea.style.top = (touch.clientY - pipOffset.y) + "px";
+        videoArea.style.right = "auto";
+        videoArea.style.bottom = "auto";
+      }
+    });
+
+    document.addEventListener("touchend", () => {
+      isDraggingPIP = false;
+    });
 
     function startCall(video) {
-      if (peerConnection || document.getElementById("videoArea").classList.contains("active")) return;
-      isVideoCall = video; isCaller = true; setCallUI(true, video);
+      if (isCallBusy()) {
+        addLocalSystemMessage('<i class="fas fa-circle-exclamation" style="color:#ffd166"></i> End the ongoing call first to switch between voice and video');
+        return;
+      }
+      isCallStarting = true;
+      isVideoCall = video;
+      isCaller = true;
+      callConnectedLogged = false; 
+      setCallUI(true, video);
 
-      navigator.mediaDevices.getUserMedia({ audio: true, video: video }).then(stream => {
-        localStream = stream; 
-        document.getElementById("localVideo").srcObject = stream;
-        peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-        
-        peerConnection.onicecandidate = e => { if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room }); };
-        peerConnection.ontrack = e => document.getElementById("remoteVideo").srcObject = e.streams[0];
-        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-        
-        peerConnection.createOffer().then(offer => {
-          peerConnection.setLocalDescription(offer);
-          socket.emit("offer", { offer, username, room, video });
+      navigator.mediaDevices.getUserMedia({ audio: true, video: video })
+        .then(stream => {
+          localStream = stream;
+          document.getElementById("localVideo").srcObject = stream;
+
+          peerConnection = new RTCPeerConnection(config);
+          peerConnection.onicecandidate = e => {
+            if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
+          };
+          peerConnection.ontrack = e => {
+            document.getElementById("remoteVideo").srcObject = e.streams[0];
+          };
+          stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+          
+          peerConnection.createOffer().then(offer => {
+            peerConnection.setLocalDescription(offer);
+            socket.emit("offer", { offer, username, room, video });
+          });
+          isCallStarting = false;
+          updateCallButtons();
+        })
+        .catch(err => {
+          console.error("Media error:", err);
+          setCallUI(false, false);
+          isCaller = false;
+          isCallStarting = false;
+          updateCallButtons();
         });
-      }).catch(err => setCallUI(false, false));
     }
 
     socket.on("offer", ({ offer, username: caller, video }) => {
-      if (document.getElementById("videoArea").classList.contains("active") || peerConnection) { 
-        socket.emit("reject-call", { username, room }); 
-        return; 
+      // Ignore new offers while already in a call
+      if (document.getElementById("videoArea").classList.contains("active") || peerConnection) {
+        socket.emit("reject-call", { username, room });
+        return;
       }
-      isVideoCall = video; window.pendingOffer = offer; isCaller = false; pendingCandidates = [];
-      document.getElementById("callerName").textContent = `${caller} is calling...`;
+      isVideoCall = video;
+      window.pendingOffer = offer;
+      isCaller = false;
+      
+      const callerName = document.getElementById("callerName");
+      callerName.textContent = `${caller} is calling...`;
+      
+      const acceptIcon = document.getElementById("acceptIcon");
+      acceptIcon.className = video ? "fas fa-video" : "fas fa-phone";
+      
       document.getElementById("incomingCall").style.display = "block";
+      updateCallButtons();
     });
 
     function acceptCall() {
       document.getElementById("incomingCall").style.display = "none";
-      navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall }).then(stream => {
-        localStream = stream; 
-        document.getElementById("localVideo").srcObject = stream;
-        peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-        
-        peerConnection.onicecandidate = e => { if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room }); };
-        peerConnection.ontrack = e => document.getElementById("remoteVideo").srcObject = e.streams[0];
-        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-        
-        peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer)).then(() => {
-          pendingCandidates.forEach(c => peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(e=>console.error(e)));
-          pendingCandidates = [];
-          return peerConnection.createAnswer();
-        }).then(answer => {
-          peerConnection.setLocalDescription(answer);
-          socket.emit("answer", { answer, room });
+      callConnectedLogged = false; 
+      isCallStarting = true;
+
+      navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall })
+        .then(stream => {
+          localStream = stream;
+          document.getElementById("localVideo").srcObject = stream;
+
+          peerConnection = new RTCPeerConnection(config);
+          peerConnection.onicecandidate = e => {
+            if (e.candidate) socket.emit("ice-candidate", { candidate: e.candidate, room });
+          };
+          peerConnection.ontrack = e => {
+            document.getElementById("remoteVideo").srcObject = e.streams[0];
+          };
+
+          stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+          
+          peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer))
+            .then(() => peerConnection.createAnswer())
+            .then(answer => {
+              peerConnection.setLocalDescription(answer);
+              socket.emit("answer", { answer, room });
+              
+              if (!callConnectedLogged) {
+                callConnectedLogged = true;
+                const callType = isVideoCall ? '<i class="fas fa-video"></i> Video' : '<i class="fas fa-phone"></i> Voice';
+                addLocalSystemMessage(`${callType} call connected`);
+              }
+            });
+
+          setCallUI(true, isVideoCall);
+          isCallStarting = false;
+          updateCallButtons();
+        })
+        .catch(err => {
+          console.error("Media error:", err);
+          isCallStarting = false;
+          updateCallButtons();
         });
-        setCallUI(true, isVideoCall);
-      });
     }
 
-    function rejectCall() { 
-      document.getElementById("incomingCall").style.display = "none"; 
-      socket.emit("reject-call", { username, room }); 
-      cleanupCallStates(); 
+    function rejectCall() {
+      document.getElementById("incomingCall").style.display = "none";
+      addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> You declined the call');
+      socket.emit("reject-call", { username, room });
+      cleanupCallStates();
     }
 
     socket.on("answer", ({ answer }) => {
       if (peerConnection && peerConnection.signalingState !== "stable") {
         peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).then(() => {
-          pendingCandidates.forEach(c => peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(e=>console.error(e)));
-          pendingCandidates = [];
+          if (!callConnectedLogged) {
+            callConnectedLogged = true;
+            const callType = isVideoCall ? '<i class="fas fa-video"></i> Video' : '<i class="fas fa-phone"></i> Voice';
+            addLocalSystemMessage(`${callType} call connected`);
+          }
         });
       }
     });
 
     socket.on("ice-candidate", ({ candidate }) => {
-      if (peerConnection && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+      if (peerConnection) {
         peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error(e));
-      } else {
-        pendingCandidates.push(candidate);
       }
     });
 
-    function toggleMute() { 
-      if(localStream){ 
-        isMuted = !isMuted; 
-        localStream.getAudioTracks()[0].enabled = !isMuted; 
-        document.getElementById("micIcon").className = isMuted ? "fas fa-microphone-slash" : "fas fa-microphone"; 
-      } 
+    function toggleMute() {
+      if (!localStream) return;
+      isMuted = !isMuted;
+      localStream.getAudioTracks()[0].enabled = !isMuted;
+      document.getElementById("micIcon").className = isMuted ? "fas fa-microphone-slash" : "fas fa-microphone";
     }
-    
-    function toggleCamera() { 
-      if(localStream && localStream.getVideoTracks().length){ 
-        const isCamOn = localStream.getVideoTracks()[0].enabled; 
-        localStream.getVideoTracks()[0].enabled = !isCamOn; 
-        document.getElementById("camIcon").className = !isCamOn ? "fas fa-video" : "fas fa-video-slash"; 
-      } 
+
+    function toggleCamera() {
+      if (!localStream || !localStream.getVideoTracks().length) return;
+      isCamOn = !isCamOn;
+      localStream.getVideoTracks()[0].enabled = isCamOn;
+      document.getElementById("camIcon").className = isCamOn ? "fas fa-video" : "fas fa-video-slash";
     }
 
     function cleanupCallStates() {
-      if (peerConnection) { peerConnection.close(); peerConnection = null; }
-      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-      document.getElementById("remoteVideo").srcObject = null; 
-      document.getElementById("localVideo").srcObject = null; 
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      document.getElementById("remoteVideo").srcObject = null;
+      document.getElementById("localVideo").srcObject = null;
       document.getElementById("incomingCall").style.display = "none";
-      setCallUI(false, false); 
-      isMuted = false; 
-      isVideoCall = false; 
-      isCaller = false; 
-      window.pendingOffer = null; 
-      pendingCandidates = [];
+      
+      setCallUI(false, false);
+      
+      isMuted = false;
+      isCamOn = true;
+      isVideoCall = false;
+      isCaller = false;
+      callConnectedLogged = false; 
+      isCallStarting = false;
+      document.getElementById("micIcon").className = "fas fa-microphone";
+      document.getElementById("camIcon").className = "fas fa-video";
+      window.pendingOffer = null;
+      updateCallButtons();
     }
 
-    function endCall() { socket.emit("call-ended", { username, room }); cleanupCallStates(); }
-    socket.on("call-ended", cleanupCallStates);
-    socket.on("call-rejected", cleanupCallStates);
+    function endCall() {
+      if (document.getElementById("videoArea").classList.contains("active") || window.pendingOffer) {
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Call ended');
+      }
+      socket.emit("call-ended", { username, room });
+      cleanupCallStates();
+    }
+
+    socket.on("call-ended", () => {
+      if (document.getElementById("videoArea").classList.contains("active")) {
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Call ended');
+      } else if (window.pendingOffer) {
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Missed call');
+      }
+      cleanupCallStates();
+    });
+
+    socket.on("call-rejected", () => {
+      if (isCaller) {
+        addLocalSystemMessage('<i class="fas fa-phone-slash" style="color:#ff6b6b"></i> Call was declined');
+      }
+      cleanupCallStates();
+    });
+
+    window.addEventListener("beforeunload", () => socket.emit("leave", { username, room }));
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeOutUpload { from{opacity:1; transform:translateY(0)} to{opacity:0; transform:translateY(-10px)} }
+    `;
+    document.head.appendChild(style);
+
+    let lastTouchEnd = 0;
+    updateCallButtons();
+    document.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
   </script>
 </body>
 </html>
