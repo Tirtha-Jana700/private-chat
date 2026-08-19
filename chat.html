@@ -409,8 +409,8 @@
       </div>
       <div class="action-row">
         <label for="file" title="Attach Files"><i class="fas fa-paperclip"></i><span class="btn-label">Upload</span></label>
-        <button onclick="startCall(false)" title="Voice Call"><i class="fas fa-phone"></i><span class="btn-label">Voice</span></button>
-        <button onclick="startCall(true)" title="Video Call"><i class="fas fa-video"></i><span class="btn-label">Video</span></button>
+        <button id="voiceCallBtn" onclick="startCall(false)" title="Voice Call"><i class="fas fa-phone"></i><span class="btn-label">Voice</span></button>
+        <button id="videoCallBtn" onclick="startCall(true)" title="Video Call"><i class="fas fa-video"></i><span class="btn-label">Video</span></button>
       </div>
       <input type="file" id="file" multiple />
     </div>
@@ -522,14 +522,19 @@
         container.appendChild(item);
       }
 
+      // 🔧 FIX: keep the real percentage (100% once finished) instead of resetting to 0%
+      const prev = currentUploads.get(id) || {};
+      let shownPercent = typeof prev.percent === "number" ? prev.percent : 0;
+      if (status === "success") shownPercent = 100;
+
       let html = `<div class="upload-info">
         <span class="upload-name" title="${name}">${name}</span>
-        <span class="upload-percent" id="percent-${id}">0%</span>
+        <span class="upload-percent" id="percent-${id}">${shownPercent}%</span>
       </div>`;
 
       if (status === "uploading") {
         html += `<div class="progress-bar-wrapper">
-          <div class="progress-bar" id="bar-${id}" style="width:0%"></div>
+          <div class="progress-bar" id="bar-${id}" style="width:${shownPercent}%"></div>
         </div>`;
         html += `<div class="upload-status status-uploading" id="status-${id}">
           <span class="upload-status-text"><i class="fas fa-spinner fa-spin"></i> Uploading...</span>
@@ -538,6 +543,9 @@
           </button>
         </div>`;
       } else if (status === "success") {
+        html += `<div class="progress-bar-wrapper">
+          <div class="progress-bar" id="bar-${id}" style="width:100%"></div>
+        </div>`;
         html += `<div class="upload-status status-success" id="status-${id}">
           <span class="upload-status-text"><i class="fas fa-check-circle"></i> Uploaded successfully</span>
         </div>`;
@@ -548,7 +556,7 @@
       }
 
       item.innerHTML = html;
-      currentUploads.set(id, { status });
+      currentUploads.set(id, { ...prev, xhr: status === "uploading" ? prev.xhr : undefined, status, percent: shownPercent, name });
       updateControlButtons();
     }
 
@@ -557,6 +565,8 @@
       const percent_el = document.getElementById(`percent-${id}`);
       if (bar) bar.style.width = percent + "%";
       if (percent_el) percent_el.textContent = percent + "%";
+      const entry = currentUploads.get(id);
+      if (entry) currentUploads.set(id, { ...entry, percent });
     }
 
     function removeUploadItem(id) {
@@ -578,9 +588,12 @@
     function uploadFile(file, uploadId) {
       const formData = new FormData();
       formData.append("file", file);
+      // 🔧 FIX: let the server broadcast the file to the whole room, so every user sees it
+      formData.append("username", username);
+      formData.append("room", room);
 
       const xhr = new XMLHttpRequest();
-      currentUploads.set(uploadId, { xhr, status: "uploading" });
+      currentUploads.set(uploadId, { xhr, status: "uploading", percent: 0, name: file.name });
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -590,19 +603,19 @@
       };
 
       xhr.onload = () => {
-        if (xhr.status === 200) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (data.url) {
-              socket.emit("message", { username, room, message: data.url });
-              addUploadItem(uploadId, file.name, "success");
-              currentUploads.set(uploadId, { status: "success" });
-            }
-          } catch (e) {
-            addUploadItem(uploadId, file.name, "error", "Upload failed");
+        let data = null;
+        try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }
+
+        if (xhr.status === 200 && data && data.url) {
+          updateUploadProgress(uploadId, 100);
+          addUploadItem(uploadId, file.name, "success");
+          // The server already broadcast the file message to the room (including us).
+          // Fallback for older servers that don't broadcast:
+          if (data.broadcast === false) {
+            socket.emit("message", { username, room, message: data.url });
           }
         } else {
-          addUploadItem(uploadId, file.name, "error", "Upload failed");
+          addUploadItem(uploadId, file.name, "error", (data && data.error) ? data.error : "Upload failed");
         }
         updateControlButtons();
       };
@@ -622,8 +635,7 @@
       if (upload && upload.xhr && upload.status === "uploading") {
         upload.xhr.abort();
       }
-      addUploadItem(id, "File", "error", "Cancelled");
-      currentUploads.set(id, { status: "error" });
+      addUploadItem(id, (upload && upload.name) || "File", "error", "Cancelled");
       updateControlButtons();
       setTimeout(() => removeUploadItem(id), 1500);
     }
@@ -633,8 +645,7 @@
         if (upload.xhr && upload.status === "uploading") {
           upload.xhr.abort();
         }
-        addUploadItem(id, "File", "error", "Cancelled");
-        currentUploads.set(id, { status: "error" });
+        addUploadItem(id, upload.name || "File", "error", "Cancelled");
       });
       updateControlButtons();
       setTimeout(() => {
@@ -685,12 +696,13 @@
       const fileName = getFileNameFromUrl(msg);
 
       if (isUploadedFile) {
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension)) {
           formattedMessage = `<img src="${msg}" alt="${fileName}" style="cursor:pointer;" onclick="window.open('${msg}','_blank')">`;
-        } else if (['mp4', 'webm', 'mov', 'ogg', 'avi'].includes(extension)) {
+        } else if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v', '3gp'].includes(extension)) {
           formattedMessage = `<video controls playsinline style="border-radius:14px;"><source src="${msg}"></video>`;
-        } else if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(extension)) {
-          formattedMessage = `<audio controls style="width:100%;"><source src="${msg}"></audio>`;
+        } else if (['mp3', 'wav', 'ogg', 'oga', 'aac', 'm4a', 'opus', 'flac', 'amr', 'weba', 'mka'].includes(extension)) {
+          formattedMessage = `<audio controls preload="metadata" style="width:100%;"><source src="${msg}"></audio>
+            <div style="font-size:.75rem;opacity:.8;margin-top:4px;">🎵 <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a></div>`;
         } else {
           formattedMessage = `📁 Shared File: <a href="${msg}" download="${fileName}" class="shared-link">${fileName}</a>`;
         }
@@ -797,6 +809,7 @@
     const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
     let isVideoCall = false;
     let isMuted = false;
+    let isCallStarting = false;
     let isCamOn = true;
     let pipOffset = { x: 0, y: 0 };
     let isDraggingPIP = false;
@@ -811,6 +824,33 @@
         area.classList.add("pip");
         document.getElementById("viewIcon").className = "fas fa-expand";
       }
+      const statusEl = document.getElementById("callStatus");
+      if (statusEl && active) {
+        statusEl.innerHTML = video ? "🎥 Video call in progress…" : "🔊 Voice call in progress…";
+      }
+      updateCallButtons();
+    }
+
+    // 🔧 FIX: one call at a time — the mode (voice/video) is locked until the call ends
+    function isCallBusy() {
+      return document.getElementById("videoArea").classList.contains("active")
+        || !!peerConnection
+        || !!window.pendingOffer
+        || isCallStarting;
+    }
+
+    function updateCallButtons() {
+      const busy = isCallBusy();
+      ["voiceCallBtn", "videoCallBtn"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = busy;
+        btn.style.opacity = busy ? "0.45" : "";
+        btn.style.pointerEvents = busy ? "none" : "";
+        btn.title = busy
+          ? "End the current call before switching call mode"
+          : (id === "voiceCallBtn" ? "Voice Call" : "Video Call");
+      });
     }
 
     function toggleCallView() {
@@ -880,6 +920,11 @@
     });
 
     function startCall(video) {
+      if (isCallBusy()) {
+        addLocalSystemMessage('<i class="fas fa-circle-exclamation" style="color:#ffd166"></i> End the ongoing call first to switch between voice and video');
+        return;
+      }
+      isCallStarting = true;
       isVideoCall = video;
       isCaller = true;
       callConnectedLogged = false; 
@@ -903,15 +948,24 @@
             peerConnection.setLocalDescription(offer);
             socket.emit("offer", { offer, username, room, video });
           });
+          isCallStarting = false;
+          updateCallButtons();
         })
         .catch(err => {
           console.error("Media error:", err);
           setCallUI(false, false);
           isCaller = false;
+          isCallStarting = false;
+          updateCallButtons();
         });
     }
 
     socket.on("offer", ({ offer, username: caller, video }) => {
+      // Ignore new offers while already in a call
+      if (document.getElementById("videoArea").classList.contains("active") || peerConnection) {
+        socket.emit("reject-call", { username, room });
+        return;
+      }
       isVideoCall = video;
       window.pendingOffer = offer;
       isCaller = false;
@@ -923,11 +977,13 @@
       acceptIcon.className = video ? "fas fa-video" : "fas fa-phone";
       
       document.getElementById("incomingCall").style.display = "block";
+      updateCallButtons();
     });
 
     function acceptCall() {
       document.getElementById("incomingCall").style.display = "none";
       callConnectedLogged = false; 
+      isCallStarting = true;
 
       navigator.mediaDevices.getUserMedia({ audio: true, video: isVideoCall })
         .then(stream => {
@@ -958,9 +1014,13 @@
             });
 
           setCallUI(true, isVideoCall);
+          isCallStarting = false;
+          updateCallButtons();
         })
         .catch(err => {
           console.error("Media error:", err);
+          isCallStarting = false;
+          updateCallButtons();
         });
     }
 
@@ -1023,9 +1083,11 @@
       isVideoCall = false;
       isCaller = false;
       callConnectedLogged = false; 
+      isCallStarting = false;
       document.getElementById("micIcon").className = "fas fa-microphone";
       document.getElementById("camIcon").className = "fas fa-video";
       window.pendingOffer = null;
+      updateCallButtons();
     }
 
     function endCall() {
@@ -1061,6 +1123,7 @@
     document.head.appendChild(style);
 
     let lastTouchEnd = 0;
+    updateCallButtons();
     document.addEventListener('touchend', (e) => {
       const now = Date.now();
       if (now - lastTouchEnd <= 300) {
