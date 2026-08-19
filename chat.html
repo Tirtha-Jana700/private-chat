@@ -818,6 +818,15 @@
       const goFull = !area.classList.contains("full");
       area.classList.toggle("full", goFull);
       area.classList.toggle("pip", !goFull);
+      
+      // 🔧 FIX: Clear inline positioning styles when entering fullscreen
+      if (goFull) {
+        area.style.left = "";
+        area.style.top = "";
+        area.style.right = "";
+        area.style.bottom = "";
+      }
+      
       document.getElementById("viewIcon").className = goFull ? "fas fa-compress" : "fas fa-expand";
     }
 
