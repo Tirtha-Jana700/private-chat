@@ -24,8 +24,8 @@
       --muted: rgba(255,255,255,.72);
       --glass-border: rgba(255,255,255,.28);
       --input-bg: rgba(255,255,255,.12);
-      --btn: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-      --btn-hover: linear-gradient(135deg,#7c8ff5 0%,#8d5fc0 100%);
+      --btn: linear-gradient(135deg, #7b78ff 0%, #9e7aff 100%);
+      --btn-hover: linear-gradient(135deg, #8c89ff 0%, #ad8bff 100%);
       --radius:26px;
       --shadow:0 20px 50px rgba(0,0,0,.45);
       --veil: linear-gradient(180deg, rgba(6,10,25,.30), rgba(6,10,25,.58));
@@ -95,9 +95,9 @@
     .msg strong{ color:var(--accent); font-weight:600; font-size:.85rem; }
     
     .msg-content {
-      background: rgba(255, 255, 255, 0.08);
-      padding: 10px;
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 10px 14px;
+      border-radius: 14px;
       margin-top: 4px;
       display: inline-block;
       max-width: 90%;
@@ -105,7 +105,7 @@
 
     .msg img {
       max-width: 100%;
-      max-height: 280px;
+      max-height: 250px;
       object-fit: contain;
       border-radius: 12px;
       margin-top: .4rem;
@@ -115,7 +115,7 @@
 
     .msg audio {
       width: 100%;
-      min-width: 220px;
+      min-width: 240px;
       max-width: 100%;
       border-radius: 12px;
       margin-top: .4rem;
@@ -124,7 +124,7 @@
 
     .msg video {
       max-width: 100%;
-      max-height: 300px;
+      max-height: 250px;
       border-radius: 12px;
       margin-top: .4rem;
       display: block;
@@ -137,17 +137,17 @@
     .composer{ flex-shrink:0; display:flex; flex-direction:column; gap:10px; padding:10px; border-radius:22px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); backdrop-filter: blur(14px) saturate(160%); }
     .input-row{ display:flex; gap:8px; align-items:stretch; width:100%; }
     
-    input[type="text"]{ flex:1 1 auto; min-width:0; height:38px; padding:0 0.8rem; -webkit-appearance:none; appearance:none; border:1px solid rgba(255,255,255,.22); border-radius:14px; font-size:0.9rem; font-family:'Raleway',sans-serif; background:var(--input-bg); color:#fff; outline:none; transition:all .3s ease; backdrop-filter: blur(8px); }
+    input[type="text"]{ flex:1 1 auto; min-width:0; height:46px; padding:0 1rem; -webkit-appearance:none; appearance:none; border:1px solid rgba(255,255,255,.22); border-radius:16px; font-size:0.9rem; font-family:'Raleway',sans-serif; background:var(--input-bg); color:#fff; outline:none; transition:all .3s ease; backdrop-filter: blur(8px); }
     input[type="text"]:focus{ border-color:var(--accent); background:rgba(255,255,255,.2); box-shadow:0 0 0 4px rgba(165,216,255,.16); }
     input::placeholder{ color:rgba(255,255,255,.55); }
 
-    #sendBtn{ width:38px; height:38px; min-width:38px; flex:0 0 38px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:var(--btn); border:none; cursor:pointer; color:#fff; transition:all .3s ease; }
+    #sendBtn{ width:46px; height:46px; min-width:46px; flex:0 0 46px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:var(--btn); border:none; cursor:pointer; color:#fff; transition:all .3s ease; }
     #sendBtn:hover{ background:var(--btn-hover); transform:translateY(-2px); }
 
     .action-row{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; align-items:stretch; }
     .action-row button, .action-row label{ width:100%; display:flex; align-items:center; justify-content:center; min-width:46px; min-height:46px; padding:.7rem; background:var(--btn); border:none; border-radius:16px; cursor:pointer; color:#fff; transition:all .3s ease; }
     .action-row button:hover, .action-row label:hover{ background:var(--btn-hover); transform:translateY(-2px); }
-    .action-row .btn-label{ font-size:.78rem; font-weight:600; letter-spacing:.2px; }
+    .action-row .btn-label{ font-size:.85rem; font-weight:600; letter-spacing:.2px; }
     .action-row .fas{ margin-right:6px; }
     #file{ display:none; }
 
@@ -353,9 +353,6 @@
         if (xhr.status === 200 && data && data.url) {
           updateUploadProgress(uploadId, 100); 
           addUploadItem(uploadId, file.name, "success");
-          
-          // BROADCAST OVER WEBSOCKET IMMEDIATELY UPON HTTP COMPLETE
-          socket.emit("message", { username, room, message: data.url });
         } else { 
           addUploadItem(uploadId, file.name, "error", (data && data.error) ? data.error : "Upload failed"); 
         }
