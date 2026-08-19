@@ -68,6 +68,9 @@ def upload_file():
             return jsonify({"error": "No file provided"}), 400
             
         file = request.files['file']
+        username = request.form.get("username", "Guest")
+        room = request.form.get("room", "default")
+
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
 
@@ -84,7 +87,12 @@ def upload_file():
         file.save(file_path)
         file_url = f"/uploads/{unique_filename}"
 
-        # FIX: Returning simple JSON response. Handled safely on JS socket side to prevent thread locks.
+        # Broadcast uploaded file directly to room via WebSocket
+        socketio.emit("message", {
+            "username": username,
+            "message": file_url
+        }, room=room)
+
         return jsonify({
             "url": file_url,
             "original_name": safe_name,
@@ -117,7 +125,6 @@ def handle_join(data):
 
         join_room(room)
         
-        # Clear stale duplicate sessions on reconnect/refresh
         sids_to_remove = [s for s, u in room_users.get(room, {}).items() if u == username]
         for s in sids_to_remove:
             if s != sid:
