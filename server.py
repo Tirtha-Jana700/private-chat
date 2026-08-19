@@ -14,31 +14,24 @@ from collections import defaultdict
 # --- Configuration ---
 UPLOAD_FOLDER = "uploads"
 STATIC_FOLDER = "static"
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_FILE_SIZE = 50 * 1024 * 1024
+
 ALLOWED_EXTENSIONS = {
-    # images
     'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg',
-    # audio (phone recorders / WhatsApp / browser recordings)
-    'mp3', 'wav', 'ogg', 'oga', 'opus', 'm4a', 'aac', 'flac', 'amr', 'weba', 'webm', 'mka', '3gp', 'caf', 'wma',
-    # video
+    'mp3', 'wav', 'ogg', 'oga', 'opus', 'm4a', 'aac', 'flac', 'amr', 'weba', 'webm', 'mka', '3gp',
     'mp4', 'mov', 'avi', 'mkv', 'm4v',
-    # documents / archives
-    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar', '7z'
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar'
 }
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(STATIC_FOLDER, exist_ok=True)
 
-# User management
 user_sessions = {}
-last_disconnect = {}
 room_users = defaultdict(dict)
 active_calls = defaultdict(dict)
-pending_disconnects = {}  # Tracks delayed disconnect jobs to handle refreshes
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 socketio = SocketIO(
@@ -56,7 +49,6 @@ def allowed_file(filename):
 def file_extension(filename):
     return filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
 
-# --- File serving routes ---
 @app.route("/")
 def index():
     return send_file("login.html")
@@ -67,25 +59,8 @@ def chat():
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
-    # conditional=True enables HTTP range requests so mobile browsers can seek/stream audio
-    ext = filename.rsplit('.', 1)[-1].lower()
-    mimetypes_map = {
-        'm4a': 'audio/mp4', 'aac': 'audio/aac', 'opus': 'audio/ogg',
-        'oga': 'audio/ogg', 'ogg': 'audio/ogg', 'amr': 'audio/amr',
-        'weba': 'audio/webm', 'mka': 'audio/x-matroska', 'flac': 'audio/flac',
-        'wav': 'audio/wav', 'mp3': 'audio/mpeg',
-    }
-    return send_from_directory(
-        UPLOAD_FOLDER, filename,
-        conditional=True,
-        mimetype=mimetypes_map.get(ext)
-    )
+    return send_from_directory(UPLOAD_FOLDER, filename, conditional=True)
 
-@app.route("/static/<path:filename>")
-def static_files(filename):
-    return send_from_directory(STATIC_FOLDER, filename)
-
-# --- Enhanced file upload ---
 @app.route("/upload", methods=["POST"])
 def upload_file():
     try:
@@ -93,66 +68,49 @@ def upload_file():
             return jsonify({"error": "No file provided"}), 400
             
         file = request.files['file']
-        
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
 
         if not allowed_file(file.filename):
-            ext = file_extension(file.filename)
-            return jsonify({
-                "error": f"File type .{ext} is not supported" if ext else "File has no extension"
-            }), 400
+            return jsonify({"error": "File type not supported"}), 400
 
         safe_name = secure_filename(file.filename)
-        # secure_filename can strip everything (e.g. non-latin recorder names) — keep the extension
         if not safe_name or safe_name.startswith('.'):
             ext = file_extension(file.filename)
             safe_name = f"file.{ext}" if ext else "file"
 
-        # Generate unique filename
-        name, ext = os.path.splitext(safe_name)
-        unique_id = str(uuid.uuid4())[:8]
-        unique_filename = f"{unique_id}_{safe_name}"
-
+        unique_filename = f"{str(uuid.uuid4())[:8]}_{safe_name}"
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
-
-        file_size = os.path.getsize(file_path)
         file_url = f"/uploads/{unique_filename}"
 
-        # 🔧 FIX: broadcast the uploaded file to everyone in the room from the server,
-        # so the media message never gets lost for the other user.
-        username = bleach.clean(request.form.get("username", "") or "")
-        room = bleach.clean(request.form.get("room", "") or "")
-        broadcast = False
-        if username and room:
-            socketio.emit("message", {
-                "username": username,
-                "message": file_url,
-                "timestamp": time.time()
-            }, room=room)
-            broadcast = True
-
+        # FIX: Do NOT socketio.emit here! It causes eventlet thread deadlocks 
+        # that freeze the chat. Let the client handle the broadcast naturally!
         return jsonify({
             "url": file_url,
             "original_name": safe_name,
-            "size": file_size,
-            "broadcast": broadcast,
+            "size": os.path.getsize(file_path),
+            "broadcast": False, # Forces the client JS to emit the socket message safely
             "success": True
         }), 200
 
     except Exception as e:
         print(f"File upload error: {e}")
-        return jsonify({"error": f"Upload failed: {e}"}), 500
+        return jsonify({"error": "Upload failed"}), 500
 
-@app.errorhandler(413)
-def too_large(error):
-    return jsonify({"error": "File too large! Max 50MB"}), 413
+def emit_user_list(room):
+    """ Emit non-personalized user list to the entire room at once """
+    if room in room_users:
+        # Use set() to ensure we don't send duplicate names if something glitches
+        users = sorted(list(set(room_users[room].values())))
+        socketio.emit("update_user_list", {
+            "users": users,
+            "count": len(users)
+        }, room=room)
 
-# --- Socket events ---
 @socketio.on("connect")
 def handle_connect():
-    print(f"Client connected: {request.sid}")
+    pass
 
 @socketio.on("join")
 def handle_join(data):
@@ -161,243 +119,118 @@ def handle_join(data):
         room = bleach.clean(data.get("room", "default"))
         sid = request.sid
 
-        if not username or not room or len(username) > 20:
-            emit("error", {"message": "Invalid username or room"})
-            return
-
-        # Cancel disconnect timer if user reconnected during refresh
-        if username in pending_disconnects:
-            eventlet.cancel(pending_disconnects[username])
-            del pending_disconnects[username]
-
         join_room(room)
+        
+        # FIX: Immediately kill any OLD "ghost" sessions for this username
+        # This solves the issue where refreshing requires a new name.
+        sids_to_remove = [s for s, u in room_users.get(room, {}).items() if u == username]
+        for s in sids_to_remove:
+            if s != sid:
+                del room_users[room][s]
+                if s in user_sessions:
+                    del user_sessions[s]
+
         user_sessions[sid] = {"username": username, "room": room}
         room_users[room][sid] = username
 
-        now = time.time()
-        last = last_disconnect.get(username, 0)
-        rejoined = now - last <= 5
-
-        if rejoined:
-            emit("message", {"username": "System", "message": "🔄 You reconnected to the chat"})
-            msg = f"🔄 {username} reconnected"
-        else:
-            emit("message", {"username": "System", "message": "✅ You joined the chat"})
-            msg = f"✅ {username} joined the chat"
+        emit("message", {"username": "System", "message": f"✅ {username} joined the chat"}, room=room, include_self=False)
+        emit("message", {"username": "System", "message": "✅ You joined the chat"})
         
-        emit("message", {"username": "System", "message": msg}, room=room, include_self=False)
-
-        if username in last_disconnect:
-            del last_disconnect[username]
-
         emit_user_list(room)
 
     except Exception as e:
         print(f"Join error: {e}")
-        emit("error", {"message": "Failed to join room"})
-
-@socketio.on("leave")
-def handle_leave(data):
-    try:
-        sid = request.sid
-        user = user_sessions.get(sid)
-        if not user:
-            return
-
-        room = user["room"]
-        username = user["username"]
-        
-        leave_room(room)
-        if sid in room_users[room]:
-            del room_users[room][sid]
-        
-        last_disconnect[username] = time.time()
-        
-        emit("message", {"username": "System", "message": "🚪 You left the chat"})
-        emit("message", {"username": "System", "message": f"🚪 {username} left the chat"}, room=room, include_self=False)
-        
-        emit_user_list(room)
-
-    except Exception as e:
-        print(f"Leave error: {e}")
 
 @socketio.on("disconnect")
 def handle_disconnect():
     try:
         sid = request.sid
         user = user_sessions.get(sid)
-        if not user:
-            return
+        if not user: return
 
         room = user["room"]
         username = user["username"]
         
         leave_room(room)
-        if sid in room_users[room]:
-            del room_users[room][sid]
-        if sid in user_sessions:
-            del user_sessions[sid]
         
-        last_disconnect[username] = time.time()
-        
-        # Buffer disconnect message by 4 seconds to prevent false alerts on page reload
-        def broadcast_disconnect(target_room, target_user):
-            eventlet.sleep(4.0)
-            if target_user in pending_disconnects:
-                emit("message", {"username": "System", "message": f"🚪 {target_user} disconnected"}, room=target_room)
-                emit_user_list(target_room)
-                del pending_disconnects[target_user]
+        # Remove this specific socket ID
+        if sid in user_sessions: del user_sessions[sid]
+        if sid in room_users.get(room, {}): del room_users[room][sid]
 
-        thread = eventlet.spawn(broadcast_disconnect, room, username)
-        pending_disconnects[username] = thread
+        # Check if the user has ANOTHER tab/refreshed connection active
+        still_in_room = any(u == username for s, u in room_users.get(room, {}).items())
+        
+        if not still_in_room:
+            # If they were in a call and disconnected completely, end it
+            if room in active_calls and active_calls[room]["caller"] == username:
+                socketio.emit("call-ended", {"username": username}, room=room)
+                del active_calls[room]
+
+            def broadcast_disconnect(target_room, target_user):
+                eventlet.sleep(3.0)
+                # Confirm they haven't reconnected in the last 3 seconds
+                if not any(u == target_user for s, u in room_users.get(target_room, {}).items()):
+                    socketio.emit("message", {"username": "System", "message": f"🚪 {target_user} disconnected"}, room=target_room)
+                    emit_user_list(target_room)
+
+            eventlet.spawn(broadcast_disconnect, room, username)
+        else:
+            emit_user_list(room)
 
     except Exception as e:
-        print(f"Disconnect error: {e}")
-
-def emit_user_list(room):
-    """
-    Emit non-personalized user list to all users in the room.
-    The client will now display the actual username for everyone.
-    """
-    users = sorted(list(room_users[room].values()))
-    
-    # Emit the raw, non-personalized list to all SIDs
-    for sid, username in room_users[room].items():
-        socketio.emit("update_user_list", {
-            "users": users,
-            "count": len(users)
-        }, room=sid)
+        pass
 
 @socketio.on("message")
 def handle_message(data):
     try:
         sid = request.sid
         user = user_sessions.get(sid)
-        if not user:
-            return
+        if not user: return
 
-        # Always use the actual username from the session
-        username = bleach.clean(user["username"])
+        username = user["username"]
         raw_msg = data.get("message", "")
         
-        allowed_tags = ['a', 'br', 'img', 'audio']
-        allowed_attributes = {
-            'a': ['href', 'download', 'target', 'rel', 'class', 'style'],
-            'img': ['src', 'style', 'alt'],
-            'audio': ['controls', 'style']
-        }
-        message = bleach.clean(raw_msg, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+        message = bleach.clean(raw_msg, tags=['a', 'br', 'img', 'audio'], attributes={'a': ['href', 'download', 'target', 'rel', 'class', 'style'], 'img': ['src', 'style', 'alt'], 'audio': ['controls', 'style']}, strip=True)
 
-        if not message.strip():
-            return
+        if not message.strip(): return
 
-        # Send the actual username to all clients
-        emit("message", {
-            "username": username,
-            "message": message,
-            "timestamp": time.time()
-        }, room=user["room"])
-
-    except Exception as e:
-        print(f"Message error: {e}")
-        emit("error", {"message": "Failed to send message"})
-
-@socketio.on("typing")
-def handle_typing(data):
-    try:
-        sid = request.sid
-        user = user_sessions.get(sid)
-        if not user:
-            return
-        
-        # Only emit if the user is typing
-        if data.get("isTyping"):
-            emit("typing", {
-                "username": user["username"],
-                "timestamp": time.time()
-            }, room=user["room"], include_self=False)
-
+        emit("message", {"username": username, "message": message}, room=user["room"])
     except Exception as e:
         pass
 
-# --- WebRTC signaling ---
 @socketio.on("offer")
 def handle_offer(data):
     try:
         room = data.get("room")
-        if not room:
-            return
-
-        emit("offer", {
-            "offer": data["offer"],
-            "username": data["username"],
-            "video": data.get("video", False)
-        }, room=room, include_self=False)
-
-        active_calls[room] = {
-            "caller": data["username"],
-            "type": "video" if data.get("video") else "audio",
-            "timestamp": time.time()
-        }
-
-    except Exception as e:
-        print(f"Offer error: {e}")
+        emit("offer", {"offer": data["offer"], "username": data["username"], "video": data.get("video", False)}, room=room, include_self=False)
+        active_calls[room] = {"caller": data["username"], "timestamp": time.time()}
+    except Exception: pass
 
 @socketio.on("answer")
 def handle_answer(data):
-    try:
-        emit("answer", {"answer": data["answer"]}, room=data["room"], include_self=False)
-    except Exception as e:
-        print(f"Answer error: {e}")
+    try: emit("answer", {"answer": data["answer"]}, room=data["room"], include_self=False)
+    except Exception: pass
 
 @socketio.on("ice-candidate")
 def handle_ice_candidate(data):
-    try:
-        emit("ice-candidate", {"candidate": data["candidate"]}, room=data["room"], include_self=False)
-    except Exception as e:
-        print(f"ICE candidate error: {e}")
+    try: emit("ice-candidate", {"candidate": data["candidate"]}, room=data["room"], include_self=False)
+    except Exception: pass
 
 @socketio.on("reject-call")
 def handle_reject_call(data):
     try:
         room = data.get("room")
         emit("call-rejected", {"username": data["username"]}, room=room, include_self=False)
-        if room in active_calls:
-            del active_calls[room]
-    except Exception as e:
-        print(f"Reject call error: {e}")
+        if room in active_calls: del active_calls[room]
+    except Exception: pass
 
 @socketio.on("call-ended")
 def handle_call_end(data):
     try:
         room = data.get("room")
         emit("call-ended", {"username": data["username"]}, room=room, include_self=False)
-        if room in active_calls:
-            del active_calls[room]
-    except Exception as e:
-        print(f"Call end error: {e}")
-
-# --- Health check ---
-@app.route("/health")
-def health_check():
-    return jsonify({
-        "status": "healthy",
-        "active_rooms": len(room_users),
-        "total_users": sum(len(users) for users in room_users.values()),
-        "active_calls": len(active_calls),
-        "timestamp": time.time()
-    })
-
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Not found"}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"error": "Internal server error"}), 500
+        if room in active_calls: del active_calls[room]
+    except Exception: pass
 
 if __name__ == "__main__":
-    print("🚀 Enhanced Chat Server Starting...")
-    print("📍 Server: http://0.0.0.0:5000/")
-    print("📊 Health: http://0.0.0.0:5000/health")
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
