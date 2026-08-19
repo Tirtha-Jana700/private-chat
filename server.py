@@ -84,13 +84,11 @@ def upload_file():
         file.save(file_path)
         file_url = f"/uploads/{unique_filename}"
 
-        # FIX: Do NOT socketio.emit here! It causes eventlet thread deadlocks 
-        # that freeze the chat. Let the client handle the broadcast naturally!
+        # FIX: Returning simple JSON response. Handled safely on JS socket side to prevent thread locks.
         return jsonify({
             "url": file_url,
             "original_name": safe_name,
             "size": os.path.getsize(file_path),
-            "broadcast": False, # Forces the client JS to emit the socket message safely
             "success": True
         }), 200
 
@@ -99,9 +97,7 @@ def upload_file():
         return jsonify({"error": "Upload failed"}), 500
 
 def emit_user_list(room):
-    """ Emit non-personalized user list to the entire room at once """
     if room in room_users:
-        # Use set() to ensure we don't send duplicate names if something glitches
         users = sorted(list(set(room_users[room].values())))
         socketio.emit("update_user_list", {
             "users": users,
@@ -121,8 +117,7 @@ def handle_join(data):
 
         join_room(room)
         
-        # FIX: Immediately kill any OLD "ghost" sessions for this username
-        # This solves the issue where refreshing requires a new name.
+        # Clear stale duplicate sessions on reconnect/refresh
         sids_to_remove = [s for s, u in room_users.get(room, {}).items() if u == username]
         for s in sids_to_remove:
             if s != sid:
@@ -153,22 +148,18 @@ def handle_disconnect():
         
         leave_room(room)
         
-        # Remove this specific socket ID
         if sid in user_sessions: del user_sessions[sid]
         if sid in room_users.get(room, {}): del room_users[room][sid]
 
-        # Check if the user has ANOTHER tab/refreshed connection active
         still_in_room = any(u == username for s, u in room_users.get(room, {}).items())
         
         if not still_in_room:
-            # If they were in a call and disconnected completely, end it
             if room in active_calls and active_calls[room]["caller"] == username:
                 socketio.emit("call-ended", {"username": username}, room=room)
                 del active_calls[room]
 
             def broadcast_disconnect(target_room, target_user):
-                eventlet.sleep(3.0)
-                # Confirm they haven't reconnected in the last 3 seconds
+                eventlet.sleep(2.0)
                 if not any(u == target_user for s, u in room_users.get(target_room, {}).items()):
                     socketio.emit("message", {"username": "System", "message": f"🚪 {target_user} disconnected"}, room=target_room)
                     emit_user_list(target_room)
