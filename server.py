@@ -15,7 +15,16 @@ from collections import defaultdict
 UPLOAD_FOLDER = "uploads"
 STATIC_FOLDER = "static"
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'mp3', 'mp4', 'wav', 'ogg', 'txt', 'zip'}
+ALLOWED_EXTENSIONS = {
+    # images
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg',
+    # audio (phone recorders / WhatsApp / browser recordings)
+    'mp3', 'wav', 'ogg', 'oga', 'opus', 'm4a', 'aac', 'flac', 'amr', 'weba', 'webm', 'mka', '3gp', 'caf', 'wma',
+    # video
+    'mp4', 'mov', 'avi', 'mkv', 'm4v',
+    # documents / archives
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar', '7z'
+}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(STATIC_FOLDER, exist_ok=True)
@@ -44,6 +53,9 @@ socketio = SocketIO(
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def file_extension(filename):
+    return filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+
 # --- File serving routes ---
 @app.route("/")
 def index():
@@ -55,7 +67,19 @@ def chat():
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    # conditional=True enables HTTP range requests so mobile browsers can seek/stream audio
+    ext = filename.rsplit('.', 1)[-1].lower()
+    mimetypes_map = {
+        'm4a': 'audio/mp4', 'aac': 'audio/aac', 'opus': 'audio/ogg',
+        'oga': 'audio/ogg', 'ogg': 'audio/ogg', 'amr': 'audio/amr',
+        'weba': 'audio/webm', 'mka': 'audio/x-matroska', 'flac': 'audio/flac',
+        'wav': 'audio/wav', 'mp3': 'audio/mpeg',
+    }
+    return send_from_directory(
+        UPLOAD_FOLDER, filename,
+        conditional=True,
+        mimetype=mimetypes_map.get(ext)
+    )
 
 @app.route("/static/<path:filename>")
 def static_files(filename):
@@ -74,11 +98,16 @@ def upload_file():
             return jsonify({"error": "No file selected"}), 400
 
         if not allowed_file(file.filename):
-            return jsonify({"error": "File type not allowed"}), 400
+            ext = file_extension(file.filename)
+            return jsonify({
+                "error": f"File type .{ext} is not supported" if ext else "File has no extension"
+            }), 400
 
         safe_name = secure_filename(file.filename)
-        if not safe_name:
-            return jsonify({"error": "Invalid filename"}), 400
+        # secure_filename can strip everything (e.g. non-latin recorder names) — keep the extension
+        if not safe_name or safe_name.startswith('.'):
+            ext = file_extension(file.filename)
+            safe_name = f"file.{ext}" if ext else "file"
 
         # Generate unique filename
         name, ext = os.path.splitext(safe_name)
@@ -89,17 +118,36 @@ def upload_file():
         file.save(file_path)
 
         file_size = os.path.getsize(file_path)
+        file_url = f"/uploads/{unique_filename}"
+
+        # 🔧 FIX: broadcast the uploaded file to everyone in the room from the server,
+        # so the media message never gets lost for the other user.
+        username = bleach.clean(request.form.get("username", "") or "")
+        room = bleach.clean(request.form.get("room", "") or "")
+        broadcast = False
+        if username and room:
+            socketio.emit("message", {
+                "username": username,
+                "message": file_url,
+                "timestamp": time.time()
+            }, room=room)
+            broadcast = True
 
         return jsonify({
-            "url": f"/uploads/{unique_filename}",
+            "url": file_url,
             "original_name": safe_name,
             "size": file_size,
+            "broadcast": broadcast,
             "success": True
         }), 200
 
     except Exception as e:
         print(f"File upload error: {e}")
-        return jsonify({"error": "Upload failed"}), 500
+        return jsonify({"error": f"Upload failed: {e}"}), 500
+
+@app.errorhandler(413)
+def too_large(error):
+    return jsonify({"error": "File too large! Max 50MB"}), 413
 
 # --- Socket events ---
 @socketio.on("connect")
